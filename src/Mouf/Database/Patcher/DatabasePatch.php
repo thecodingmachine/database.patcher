@@ -17,60 +17,244 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-namespace Mouf\Utils\Patcher;
+namespace Mouf\Database\Patcher;
+
+use Mouf\Utils\Patcher\PatchInterface;
+use Mouf\Database\DBConnection\ConnectionInterface;
+use Mouf\Database\DBConnection\DBConnectionException;
+use Mouf\Utils\Patcher\PatchException;
+use Mouf\MoufManager;
 
 /**
  * Classes implementing this interface reprensent patches that can be applied on the application.
  * 
  * @author David Negrier <david@mouf-php.com>
  */
-interface PatchInterface {
+class DatabasePatch implements PatchInterface {
 
-	const STATUS_AWAITING = "awaiting";
-	const STATUS_APPLIED = "applied";
-	const STATUS_SKIPPED = "skipped";
+	private $uniqueName;
+	private $upSqlFile;
+	private $downSqlFile;
+	private $description;
 	
 	/**
-	 * Applies the patch.
+	 * 
+	 * @var ConnectionInterface
 	 */
-	function apply();
+	private $dbConnection;
 
 	/**
-	 * Reverts (cancels) the patch.
-	 * Note: patchs do not have to provide a "revert" feature (see canRevert method).
+	 * 
+	 * @param ConnectionInterface $dbConnection The DBConnection that will be used to run the patch.
+	 * @param string $uniqueName The unique name for this patch.
+	 * @param string $upSqlFile
+	 * @param string $downSqlFile
+	 * @param string $description The description for this patch.
 	 */
-	function revert();
+	public function __construct(ConnectionInterface $dbConnection = null, $uniqueName = null, $upSqlFile = null, $downSqlFile = null, $description = null) {
+		$this->dbConnection = $dbConnection;
+		$this->uniqueName = $uniqueName;
+		$this->upSqlFile = $upSqlFile;
+		$this->downSqlFile = $downSqlFile;
+		$this->description = $description;
+	}
 	
 	/**
-	 * Returns true if this patch can be canceled, false otherwise.
-	 * 
-	 * @return boolean
+	 * (non-PHPdoc)
+	 * @see \Mouf\Utils\Patcher\PatchInterface::apply()
 	 */
-	function canRevert();
+	public function apply() {
+		$this->createPatchesTable();
+		
+		// Let's run the patch.
+		try {
+			if (!file_exists(ROOT_PATH.$this->upSqlFile)) {
+				throw new PatchException("An error occured while applying patch '".$this->getUniqueName()."': the file '".$this->upSqlFile."' cannot be found.");
+			}
+			$this->executeSqlFile(ROOT_PATH.$this->upSqlFile);
+		} catch (\Exception $e) {
+			// On error, let's mark this in database.
+			$this->savePatch(PatchInterface::STATUS_ERROR, $e->getMessage());
+			throw $e;
+		}
+		$this->savePatch(PatchInterface::STATUS_APPLIED, null);
+	}
+
+	/* (non-PHPdoc)
+	 * @see \Mouf\Utils\Patcher\PatchInterface::skip()
+	 */
+	public function skip() {
+		$this->createPatchesTable();
+		$this->savePatch(PatchInterface::STATUS_SKIPPED, null);	
+	}
 	
 	/**
-	 * Returns the status of this patch.
-	 * 
-	 * Can be one of:
-	 * 
-	 * - PatchInterface::STATUS_AWAITING (patch awaiting to be applied)
-	 * - PatchInterface::STATUS_APPLIED (patch has been run successfully)
-	 * - PatchInterface::STATUS_SKIPPED (patch has been skipped)
+	 * (non-PHPdoc)
+	 * @see \Mouf\Utils\Patcher\PatchInterface::revert()
 	 */
-	function getStatus();
+	public function revert() {
+		$this->createPatchesTable();
+		
+		// Let's run the patch.
+		try {
+			if (!file_exists(ROOT_PATH.$this->downSqlFile)) {
+				throw new PatchException("An error occured while applying patch '".$this->getUniqueName()."': the file '".$this->downSqlFile."' cannot be found.");
+			}
+			$this->executeSqlFile(ROOT_PATH.$this->downSqlFile);
+		} catch (\Exception $e) {
+			// On error, let's mark this in database.
+			$this->savePatch(PatchInterface::STATUS_ERROR, $e->getMessage());
+			throw $e;
+		}
+		$this->savePatch(PatchInterface::STATUS_AWAITING, null);
+	}
 	
 	/**
-	 * Returns a unique name for this patch. 
+	 * Creates the 'patches' table if it does not exists yet.
+	 * @throws \Exception
+	 */
+	private function createPatchesTable() {
+		$this->checkDbConnection();
+		// First, let's check that the patches table exists and let's create the table if it does not.
+		$tables = $this->dbConnection->getListOfTables();
+		if (array_search('patches', $tables) === false) {
+			// Let's create the table.
+			$result = $this->executeSqlFile(__DIR__.'/../../../database/create_patches_table.sql');
+		}
+	}
+	
+	/**
+	 * (non-PHPdoc)
+	 * @see \Mouf\Utils\Patcher\PatchInterface::canRevert()
+	 */
+	public function canRevert() {
+		return !empty($this->downSqlFile);
+	}
+	
+	/**
+	 * (non-PHPdoc)
+	 * @see \Mouf\Utils\Patcher\PatchInterface::getStatus()
+	 */
+	public function getStatus() {
+		$this->createPatchesTable();
+		
+		$status = $this->dbConnection->getOne('SELECT status FROM patches WHERE unique_name = '.$this->dbConnection->quoteSmart($this->uniqueName));
+		if (!$status) {
+			return PatchInterface::STATUS_AWAITING;
+		}
+		return $status;
+	}
+	
+	/**
+	 * (non-PHPdoc)
+	 * @see \Mouf\Utils\Patcher\PatchInterface::getUniqueName()
+	 */
+	public function getUniqueName() {
+		return $this->uniqueName;
+	}
+	
+	/**
+	 * (non-PHPdoc)
+	 * @see \Mouf\Utils\Patcher\PatchInterface::getDescription()
+	 */
+	public function getDescription() {
+		return $this->description;
+	}
+	
+	/**
+	 * Executes the given SQL file.
+	 * Throws an exception on error.
 	 *
-	 * @return string
+	 * Returns the number of statements executed.
+	 *
+	 * @param string $file The SQL filename
 	 */
-	function getUniqueName();
+	private function executeSqlFile($file) {
+		//$this->info("Processing $file statements...\n");
+		//$nb_errors = 0;
+		$nb_statements = 0;
+		$sql_string = file_get_contents($file);
+	
+		do {
+			$next_statement = $this->clever_sql_split($sql_string);
+	
+			try {
+				if (trim($next_statement)!="") {
+					//$this->trace("Executing statement: ".$next_statement);
+					$this->dbConnection->exec($next_statement);
+					$nb_statements++;
+				}
+			} catch (\Exception $e) {
+				throw new \Exception("An error occured while executing request: ".$next_statement." --- Error message: ".$e->getMessage(), 0, $e);
+				/*$this->error("A database error occured when running the script '$file': ". $e->getMessage(), $e);
+				$nb_errors++;
+				if (!$on_error_continue)
+				{
+					break;
+				}*/
+			}
+	
+			$sql_string = substr($sql_string, strlen($next_statement)+1);
+		} while ($sql_string != false);
+	
+		return $nb_statements;
+	}
 	
 	/**
-	 * Returns a short description of the patch.
-	 * 
-	 * @return string
+	 * Gets the next SQL command from $str (which is supposed to be an SQL file).
+	 *
+	 * @param unknown_type $str
+	 * @return unknown
 	 */
-	function getDescription();
-}
+	private function clever_sql_split($str) {
+		preg_match("/((?:(?:'(?:(?:\\\\')|[^'])*')|[^;])*)/",$str, $res);
+		return $res[1];
+	}
+	
+	private function savePatch($status, $error_message) {
+		$this->checkDbConnection();
+		$id = $this->dbConnection->getOne('SELECT id FROM patches WHERE unique_name = '.$this->dbConnection->quoteSmart($this->uniqueName));
+		if ($id) {
+			$this->dbConnection->exec('UPDATE patches SET unique_name = '.$this->dbConnection->quoteSmart($this->uniqueName).',
+					status = '.$this->dbConnection->quoteSmart($status).',
+					exec_date = '.$this->dbConnection->quoteSmart(date('Y-m-d H:i:s')).',
+					error_message = '.$this->dbConnection->quoteSmart($error_message).' WHERE id = '.$this->dbConnection->quoteSmart($id));
+		} else {
+			$this->dbConnection->exec('INSERT INTO patches (unique_name, status, exec_date, error_message) 
+					VALUES  ('.$this->dbConnection->quoteSmart($this->uniqueName).',
+					'.$this->dbConnection->quoteSmart($status).',
+					'.$this->dbConnection->quoteSmart(date('Y-m-d H:i:s')).',
+					'.$this->dbConnection->quoteSmart($error_message).')');
+		}
+	}
+	
+	/* (non-PHPdoc)
+	 * @see \Mouf\Utils\Patcher\PatchInterface::getLastErrorMessage()
+	 */
+	public function getLastErrorMessage() {
+		$this->checkDbConnection();
+		$errorMessage = $this->dbConnection->getOne('SELECT error_message FROM patches WHERE unique_name = '.$this->dbConnection->quoteSmart($this->uniqueName));
+		if (!$errorMessage) {
+			return null;
+		}
+		return $errorMessage;
+	}
 
+	/**
+	 * Throws an exception if dbConnection is not set.
+	 * 
+	 */
+	private function checkDbConnection() {
+		if ($this->dbConnection == null) {
+			throw new PatchException("Error in patch '".htmlentities($this->getUniqueName(), ENT_QUOTES, 'utf-8')."'. The dbConnection is not set for this patch.");
+		}
+	}
+
+	/* (non-PHPdoc)
+	 * @see \Mouf\Utils\Patcher\PatchInterface::getEditUrl()
+	 */
+	public function getEditUrl() {
+		return "dbpatch/?patchInstanceName=".urlencode(MoufManager::getMoufManager()->findInstanceName($this));
+	}
+
+}
