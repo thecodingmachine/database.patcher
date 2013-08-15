@@ -6,4 +6,3 @@ If you are working with a team or with many environment, this is very useful to 
 
 This is an extension (and the main implementation) of Mouf's patcher system.
 For more documentation, have a look [Mouf's patcher system](http://mouf-php.com/packages/mouf/utils.patcher) documentation
-
