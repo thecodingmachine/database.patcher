@@ -9,17 +9,17 @@ require_once __DIR__."/../../../autoload.php";
 
 use Mouf\Actions\InstallUtils;
 use Mouf\MoufManager;
-
+use Mouf\Database\DBConnection\ConnectionInterface;
 // Let's init Mouf
 InstallUtils::init(InstallUtils::$INIT_APP);
 
 $moufManager = MoufManager::getMoufManager();
 
-// Let's create the instance.
+// Let's create the table.
+$dbConnection = $moufManager->getInstance("dbConnection");
+/* @var $dbConnection ConnectionInterface */
 
-
-// Let's rewrite the MoufComponents.php file to save the component
-$moufManager->rewriteMouf();
+$dbConnection->exec(file_get_contents(__DIR__.'/../database/create_patches_table.sql'));
 
 // Finally, let's continue the install
 InstallUtils::continueInstall();
