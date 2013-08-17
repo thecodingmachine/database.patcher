@@ -220,7 +220,7 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 			
 			if ($oldUpSqlFile) {
 				if (file_exists($rootPath.$oldUpSqlFile)) {
-					unlink($root_path.$oldUpSqlFile);
+					unlink($rootPath.$oldUpSqlFile);
 				}
 			}
 		}
