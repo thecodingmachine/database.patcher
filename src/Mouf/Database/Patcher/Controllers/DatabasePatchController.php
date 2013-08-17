@@ -73,18 +73,18 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 			$this->oldUniqueName = $this->uniqueName;
 			$this->upSqlFileName = $patchDescriptor->getProperty("upSqlFile")->getValue();
 			$this->downSqlFileName = $patchDescriptor->getProperty("downSqlFile")->getValue();
-			if ($this->downSqlFileName == null) {
-				$this->downSqlFileName = "database/down/".$this->uniqueName.".sql";
-			}
 			if (!file_exists($rootPath.$this->upSqlFileName)) {
 				set_user_message("Unable to locate file '".$this->upSqlFileName."'. Was it created by you? Did someone forget to commit this file?");
 			} else {
 				$this->upSql = file_get_contents($rootPath.$this->upSqlFileName);
 			}
-			if (!file_exists($rootPath.$this->downSqlFileName)) {
+			if ($this->downSqlFileName != null && !file_exists($rootPath.$this->downSqlFileName)) {
 				set_user_message("Unable to locate file '".$this->downSqlFileName."'. Was it created by you? Did someone forget to commit this file?");
 			} else {
 				$this->downSql = file_get_contents($rootPath.$this->downSqlFileName);
+			}
+			if ($this->downSqlFileName == null) {
+				$this->downSqlFileName = "database/down/".$this->uniqueName.".sql";
 			}
 		}
 		$this->status = "skipped";
