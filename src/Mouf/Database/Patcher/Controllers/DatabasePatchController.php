@@ -204,7 +204,9 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 			
 			// Let's create the directory
 			if (!file_exists($baseDirUpSqlFile)) {
+				$old = umask(0);
 				$result = @mkdir($baseDirUpSqlFile, 0775, true);
+				umask($old);
 				if (!$result) {
 					set_user_message("Sorry, impossible to create directory '".plainstring_to_htmlprotected($baseDirUpSqlFile)."'. Please check directory permissions.");
 					header("Location: .?name=".urlencode($name)."&selfedit=".urlencode($selfedit).($patchInstanceName?"&patchInstanceName=".$patchInstanceName:""));
@@ -231,7 +233,9 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 					
 				// Let's create the directory
 				if (!file_exists($baseDirDownSqlFile)) {
-					$result = mkdir($baseDirDownSqlFile, 0775, true);
+					$old = umask(0);
+					$result = @mkdir($baseDirDownSqlFile, 0775, true);
+					umask($old);
 					if (!$result) {
 						set_user_message("Sorry, impossible to create directory '".plainstring_to_htmlprotected($baseDirDownSqlFile)."'. Please check directory permissions.");
 						header("Location: .?name=".urlencode($name)."&selfedit=".urlencode($selfedit).($patchInstanceName?"&patchInstanceName=".$patchInstanceName:""));
@@ -254,8 +258,10 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 		}
 		
 		file_put_contents($rootPath.$upSqlFileName, $upSql);
+		chmod($rootPath.$upSqlFileName, 0664);
 		if ($downSql) {
 			file_put_contents($rootPath.$downSqlFileName, $downSql);
+			chmod($rootPath.$downSqlFileName, 0664);
 		}
 		
 		$patchDescriptor->getProperty("upSqlFile")->setValue($upSqlFileName);
