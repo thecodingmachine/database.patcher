@@ -119,7 +119,7 @@ class DatabasePatch implements PatchInterface {
 		$tables = $this->dbConnection->getListOfTables();
 		if (array_search('patches', $tables) === false) {
 			// Let's create the table.
-			$result = $this->executeSqlFile(__DIR__.'/../../../database/create_patches_table.sql');
+			$result = $this->executeSqlFile(__DIR__.'/../../../../database/create_patches_table.sql');
 		}
 	}
 	
