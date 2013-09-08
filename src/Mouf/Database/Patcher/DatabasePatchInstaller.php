@@ -51,25 +51,25 @@ class DatabasePatchInstaller {
 		// First, let's find if this patch already exists... We assume that $uniqueName = "dbpatch.$instanceName".
 		
 		// If the patch already exists, we go in edit mode.
-		if (!$this->moufManager->has("dbpatch.".$uniqueName)) {
-			$patchDescriptor = $this->moufManager->getInstanceDescriptor("dbpatch.".$uniqueName);
+		if ($moufManager->has("dbpatch.".$uniqueName)) {
+			$patchDescriptor = $moufManager->getInstanceDescriptor("dbpatch.".$uniqueName);
 			$exists = true;
 		} else {
-			$patchDescriptor = $this->moufManager->createInstance("Mouf\\Database\\Patcher\\DatabasePatch");
+			$patchDescriptor = $moufManager->createInstance("Mouf\\Database\\Patcher\\DatabasePatch");
 			$patchDescriptor->setName("dbpatch.".$uniqueName);
 			$exists = false;
 		}
 		
 		$patchDescriptor->getProperty("uniqueName")->setValue($uniqueName);
 		$patchDescriptor->getProperty("description")->setValue($description);
-		$patchDescriptor->getProperty("dbConnection")->setValue($this->moufManager->getInstanceDescriptor("dbConnection"));
+		$patchDescriptor->getProperty("dbConnection")->setValue($moufManager->getInstanceDescriptor("dbConnection"));
 		
 		
 		$patchDescriptor->getProperty("upSqlFile")->setValue($upSqlFileName);
 		$patchDescriptor->getProperty("downSqlFile")->setValue($downSqlFileName);
 		
 		// Register the patch in the patchService.
-		$patchManager = $this->moufManager->getInstanceDescriptor("patchService");
+		$patchManager = $moufManager->getInstanceDescriptor("patchService");
 		if (!$exists) {
 			$patchs = $patchManager->getProperty("patchs")->getValue();
 			if ($patchs === null) {
