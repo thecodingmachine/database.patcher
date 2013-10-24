@@ -78,10 +78,12 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 			} else {
 				$this->upSql = file_get_contents($rootPath.$this->upSqlFileName);
 			}
-			if ($this->downSqlFileName != null && !file_exists($rootPath.$this->downSqlFileName)) {
-				set_user_message("Unable to locate file '".$this->downSqlFileName."'. Was it created by you? Did someone forget to commit this file?");
-			} else {
-				$this->downSql = file_get_contents($rootPath.$this->downSqlFileName);
+			if ($this->downSqlFileName != null) {
+				if(!file_exists($rootPath.$this->downSqlFileName)) {
+					set_user_message("Unable to locate file '".$this->downSqlFileName."'. Was it created by you? Did someone forget to commit this file?");
+				} else {
+					$this->downSql = file_get_contents($rootPath.$this->downSqlFileName);
+				}
 			}
 			if ($this->downSqlFileName == null) {
 				$this->downSqlFileName = "database/down/".$this->uniqueName.".sql";
