@@ -260,10 +260,12 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 		}
 		
 		file_put_contents($rootPath.$upSqlFileName, $upSql);
-		chmod($rootPath.$upSqlFileName, 0664);
+		// Chmod may fail if the file does not belong to the Apache user.
+		@chmod($rootPath.$upSqlFileName, 0664);
 		if ($downSql) {
 			file_put_contents($rootPath.$downSqlFileName, $downSql);
-			chmod($rootPath.$downSqlFileName, 0664);
+			// Chmod may fail if the file does not belong to the Apache user.
+			@chmod($rootPath.$downSqlFileName, 0664);
 		}
 		
 		$patchDescriptor->getProperty("upSqlFile")->setValue($upSqlFileName);
