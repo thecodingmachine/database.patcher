@@ -170,45 +170,49 @@ class DatabasePatch implements PatchInterface {
 	 * @param string $file The SQL filename
 	 */
 	private function executeSqlFile($file) {
-		//$this->info("Processing $file statements...\n");
-		//$nb_errors = 0;
+
+        set_time_limit(0);
+
 		$nb_statements = 0;
-		$sql_string = file_get_contents($file);
-	
-		do {
-			$next_statement = $this->clever_sql_split($sql_string);
-	
-			try {
-				if (trim($next_statement)!="") {
-					//$this->trace("Executing statement: ".$next_statement);
-					$this->dbConnection->exec($next_statement);
-					$nb_statements++;
-				}
-			} catch (\Exception $e) {
-				throw new \Exception("An error occured while executing request: ".$next_statement." --- Error message: ".$e->getMessage(), 0, $e);
-				/*$this->error("A database error occured when running the script '$file': ". $e->getMessage(), $e);
-				$nb_errors++;
-				if (!$on_error_continue)
-				{
-					break;
-				}*/
-			}
-	
-			$sql_string = substr($sql_string, strlen($next_statement)+1);
-		} while ($sql_string != false);
-	
-		return $nb_statements;
-	}
-	
-	/**
-	 * Gets the next SQL command from $str (which is supposed to be an SQL file).
-	 *
-	 * @param unknown_type $str
-	 * @return unknown
-	 */
-	private function clever_sql_split($str) {
-		preg_match("/((?:(?:'(?:(?:\\\\')|[^'])*')|[^;])*)/",$str, $res);
-		return $res[1];
+
+        if (is_file($file) === true)
+        {
+            $fpt = fopen($file, 'r');
+
+            if (is_resource($fpt) === true)
+            {
+                $query = array();
+
+                while (feof($fpt) === false)
+                {
+                    $query[] = fgets($fpt);
+
+                    if (preg_match('~' . preg_quote(';', '~') . '\s*$~iS', end($query)) === 1)
+                    {
+                        $query = trim(implode('', $query));
+
+                        try {
+                            $this->dbConnection->exec($query);
+                        } catch (\Exception $e) {
+                            throw new \Exception("An error occurred while executing request: ".$query." --- Error message: ".$e->getMessage(), 0, $e);
+			            }
+                        $nb_statements++;
+                    }
+
+                    if (is_string($query) === true)
+                    {
+                        $query = array();
+                    }
+                }
+
+                fclose($fpt);
+                return $nb_statements;
+            } else {
+                throw new \Exception("Can not open file: ".$file);
+            }
+        } else {
+            throw new \Exception("Can not find file: ".$file);
+        }
 	}
 	
 	private function savePatch($status, $error_message) {
