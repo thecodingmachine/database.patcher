@@ -13,6 +13,7 @@ use Mouf\Reflection\MoufReflectionProxy;
 
 use Mouf\Html\HtmlElement\HtmlBlock;
 use Mouf\InstanceProxy;
+use Mouf\UniqueIdService;
 use Mouf\Utils\Patcher\PatchInterface;
 
 /**
@@ -61,7 +62,7 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 		$this->patchesArray = $patchService->getView();*/
 		
 		if ($patchInstanceName == null) {
-			$this->uniqueName = date("Ymd")."-patch";
+			$this->uniqueName = UniqueIdService::getUniqueId() . '-' . date("Ymd")."-patch";
 			$this->oldUniqueName = "";
 			$this->upSqlFileName = "database/up/".date("Ymd")."-patch.sql";
 			$this->downSqlFileName = "database/down/".date("Ymd")."-patch.sql";
