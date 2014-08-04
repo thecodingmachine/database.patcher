@@ -116,17 +116,25 @@ $(function() {
 
 	var uniqueName = $('input[name=uniqueName]').val();
 
+    // Removes the first word of the unique name (it is the unique ID and we generally want it in MoufComponents but not in the database/up directory).
+    var removeFirstWord = function(str) {
+        var baseNameArr = str.split('-')
+        baseNameArr.shift();
+        return baseNameArr.join('-');
+    }
+
 	$('input[name=uniqueName]').keyup(function() {
 		var newUniqueName = $('input[name=uniqueName]').val();
 		var upSqlFileName = $('input[name=upSqlFileName]').val();
 		var downSqlFileName = $('input[name=downSqlFileName]').val();
 
-		if (upSqlFileName == "database/up/"+uniqueName+".sql") {
-			$('input[name=upSqlFileName]').val("database/up/"+newUniqueName+".sql");
+
+		if (upSqlFileName == "database/up/"+removeFirstWord(uniqueName)+".sql") {
+			$('input[name=upSqlFileName]').val("database/up/"+removeFirstWord(newUniqueName)+".sql");
 		}
 		
-		if (downSqlFileName == "database/down/"+uniqueName+".sql") {
-			$('input[name=downSqlFileName]').val("database/down/"+newUniqueName+".sql");
+		if (downSqlFileName == "database/down/"+removeFirstWord(uniqueName)+".sql") {
+			$('input[name=downSqlFileName]').val("database/down/"+removeFirstWord(newUniqueName)+".sql");
 		}
 		
 		uniqueName = newUniqueName;
