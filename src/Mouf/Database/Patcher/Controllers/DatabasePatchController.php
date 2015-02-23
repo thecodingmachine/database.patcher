@@ -62,10 +62,10 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 		$this->patchesArray = $patchService->getView();*/
 		
 		if ($patchInstanceName == null) {
-			$this->uniqueName = UniqueIdService::getUniqueId() . '-' . date("Ymd")."-patch";
+			$this->uniqueName = UniqueIdService::getUniqueId() . '-' . date("YmdHis")."-patch";
 			$this->oldUniqueName = "";
-			$this->upSqlFileName = "database/up/".date("Ymd")."-patch.sql";
-			$this->downSqlFileName = "database/down/".date("Ymd")."-patch.sql";
+			$this->upSqlFileName = "database/up/".date("YmdHis")."-patch.sql";
+			$this->downSqlFileName = "database/down/".date("YmdHis")."-patch.sql";
 		} else {
 			$patchDescriptor = $this->moufManager->getInstanceDescriptor($this->patchInstanceName);
 			
