@@ -62,7 +62,7 @@ class DatabasePatchInstaller {
 		
 		$patchDescriptor->getProperty("uniqueName")->setValue($uniqueName);
 		$patchDescriptor->getProperty("description")->setValue($description);
-		$patchDescriptor->getProperty("dbConnection")->setValue($moufManager->getInstanceDescriptor("dbConnection"));
+		$patchDescriptor->getProperty("dbalConnection")->setValue($moufManager->getInstanceDescriptor("dbalConnection"));
 		
 		
 		$patchDescriptor->getProperty("upSqlFile")->setValue($upSqlFileName);

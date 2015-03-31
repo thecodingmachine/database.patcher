@@ -19,9 +19,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace Mouf\Database\Patcher;
 
+use Doctrine\DBAL\Connection;
 use Mouf\Utils\Patcher\PatchInterface;
-use Mouf\Database\DBConnection\ConnectionInterface;
-use Mouf\Database\DBConnection\DBConnectionException;
+use Doctrine\DBAL\Driver;
 use Mouf\Utils\Patcher\PatchException;
 use Mouf\MoufManager;
 
@@ -39,20 +39,19 @@ class DatabasePatch implements PatchInterface {
 	
 	/**
 	 * 
-	 * @var ConnectionInterface
+	 * @var Connection
 	 */
-	private $dbConnection;
+	private $dbalConnection;
 
-	/**
-	 * 
-	 * @param ConnectionInterface $dbConnection The DBConnection that will be used to run the patch.
-	 * @param string $uniqueName The unique name for this patch.
-	 * @param string $upSqlFile
-	 * @param string $downSqlFile
-	 * @param string $description The description for this patch.
-	 */
-	public function __construct(ConnectionInterface $dbConnection = null, $uniqueName = null, $upSqlFile = null, $downSqlFile = null, $description = null) {
-		$this->dbConnection = $dbConnection;
+    /**
+     * @param Connection $dbalConnection The DbalConnection that will be used to run the patch.
+     * @param string $uniqueName The unique name for this patch.
+     * @param string $upSqlFile
+     * @param string $downSqlFile
+     * @param string $description The description for this patch.
+     */
+	public function __construct(Connection $dbalConnection = null, $uniqueName = null, $upSqlFile = null, $downSqlFile = null, $description = null) {
+		$this->dbalConnection = $dbalConnection;
 		$this->uniqueName = $uniqueName;
 		$this->upSqlFile = $upSqlFile;
 		$this->downSqlFile = $downSqlFile;
@@ -114,9 +113,9 @@ class DatabasePatch implements PatchInterface {
 	 * @throws \Exception
 	 */
 	private function createPatchesTable() {
-		$this->checkDbConnection();
+		$this->checkdbalConnection();
 		// First, let's check that the patches table exists and let's create the table if it does not.
-		$tables = $this->dbConnection->getListOfTables();
+        $tables = $this->dbalConnection->getSchemaManager()->listTableNames();
 		if (array_search('patches', $tables) === false) {
 			// Let's create the table.
 			$result = $this->executeSqlFile(__DIR__.'/../../../../database/create_patches_table.sql');
@@ -137,8 +136,8 @@ class DatabasePatch implements PatchInterface {
 	 */
 	public function getStatus() {
 		$this->createPatchesTable();
-		
-		$status = $this->dbConnection->getOne('SELECT status FROM patches WHERE unique_name = '.$this->dbConnection->quoteSmart($this->uniqueName));
+
+		$status = $this->dbalConnection->fetchColumn('SELECT status FROM patches WHERE unique_name = ?', array($this->uniqueName));
 		if (!$status) {
 			return PatchInterface::STATUS_AWAITING;
 		}
@@ -192,7 +191,7 @@ class DatabasePatch implements PatchInterface {
                         $query = trim(implode('', $query));
 
                         try {
-                            $this->dbConnection->exec($query);
+                            $this->dbalConnection->exec($query);
                         } catch (\Exception $e) {
                             throw new \Exception("An error occurred while executing request: ".$query." --- Error message: ".$e->getMessage(), 0, $e);
 			            }
@@ -216,19 +215,29 @@ class DatabasePatch implements PatchInterface {
 	}
 	
 	private function savePatch($status, $error_message) {
-		$this->checkDbConnection();
-		$id = $this->dbConnection->getOne('SELECT id FROM patches WHERE unique_name = '.$this->dbConnection->quoteSmart($this->uniqueName));
+		$this->checkdbalConnection();
+		$id = $this->dbalConnection->fetchColumn('SELECT id FROM patches WHERE unique_name = ?', array($this->uniqueName));
 		if ($id) {
-			$this->dbConnection->exec('UPDATE patches SET unique_name = '.$this->dbConnection->quoteSmart($this->uniqueName).',
-					status = '.$this->dbConnection->quoteSmart($status).',
-					exec_date = '.$this->dbConnection->quoteSmart(date('Y-m-d H:i:s')).',
-					error_message = '.$this->dbConnection->quoteSmart($error_message).' WHERE id = '.$this->dbConnection->quoteSmart($id));
+			$this->dbalConnection->update('patches',
+                array(
+                    'unique_name' => $this->uniqueName,
+                    'status' => $status,
+                    'exec_date' => date('Y-m-d H:i:s'),
+                    'error_message' => $error_message
+                ),
+                array(
+                    'id' =>$id
+                )
+            );
 		} else {
-			$this->dbConnection->exec('INSERT INTO patches (unique_name, status, exec_date, error_message) 
-					VALUES  ('.$this->dbConnection->quoteSmart($this->uniqueName).',
-					'.$this->dbConnection->quoteSmart($status).',
-					'.$this->dbConnection->quoteSmart(date('Y-m-d H:i:s')).',
-					'.$this->dbConnection->quoteSmart($error_message).')');
+			$this->dbalConnection->insert('patches',
+                array(
+                    'unique_name' => $this->uniqueName,
+                    'status' => $status,
+                    'exec_date' => date('Y-m-d H:i:s'),
+                    'error_message' => $error_message
+                )
+            );
 		}
 	}
 	
@@ -236,8 +245,8 @@ class DatabasePatch implements PatchInterface {
 	 * @see \Mouf\Utils\Patcher\PatchInterface::getLastErrorMessage()
 	 */
 	public function getLastErrorMessage() {
-		$this->checkDbConnection();
-		$errorMessage = $this->dbConnection->getOne('SELECT error_message FROM patches WHERE unique_name = '.$this->dbConnection->quoteSmart($this->uniqueName));
+		$this->checkdbalConnection();
+		$errorMessage = $this->dbalConnection->fetchColumn('SELECT error_message FROM patches WHERE unique_name = ?', array($this->uniqueName));
 		if (!$errorMessage) {
 			return null;
 		}
@@ -245,12 +254,12 @@ class DatabasePatch implements PatchInterface {
 	}
 
 	/**
-	 * Throws an exception if dbConnection is not set.
+	 * Throws an exception if dbalConnection is not set.
 	 * 
 	 */
-	private function checkDbConnection() {
-		if ($this->dbConnection == null) {
-			throw new PatchException("Error in patch '".htmlentities($this->getUniqueName(), ENT_QUOTES, 'utf-8')."'. The dbConnection is not set for this patch.");
+	private function checkdbalConnection() {
+		if ($this->dbalConnection == null) {
+			throw new PatchException("Error in patch '".htmlentities($this->getUniqueName(), ENT_QUOTES, 'utf-8')."'. The dbalConnection is not set for this patch.");
 		}
 	}
 
