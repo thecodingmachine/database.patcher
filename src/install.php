@@ -16,7 +16,7 @@ InstallUtils::init(InstallUtils::$INIT_APP);
 $moufManager = MoufManager::getMoufManager();
 
 // Let's create the table.
-$dbConnection = $moufManager->getInstance("dbConnection");
+$dbConnection = $moufManager->getInstance("dbalConnection");
 /* @var $dbConnection ConnectionInterface */
 
 $dbConnection->exec(file_get_contents(__DIR__.'/../database/create_patches_table.sql'));
