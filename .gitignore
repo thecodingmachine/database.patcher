@@ -3,3 +3,5 @@
 .buildpath
 .project
 .settings
+generated/*
+!generated/.gitkeep
