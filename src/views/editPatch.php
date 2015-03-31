@@ -11,8 +11,8 @@
 you can register the patch on your development environment and play the patch back on the production server.</p>
 
 <?php if ($this->patchInstanceName): ?>
-<div class="alert"><strong>Warning!</strong> You are going to edit an SQL patch. Be sure that the patch has not been shared with anyone 
-(and that it was not run previously). Indeed, executed patches are not executed again after edition. If your patch has already been shared 
+<div class="alert"><strong>Warning!</strong> You are going to edit an SQL patch. Be sure that the patch has not been shared with anyone
+(and that it was not run previously). Indeed, executed patches are not executed again after edition. If your patch has already been shared
 and executed by others, we advise you to add an additional patch instead of editing this one (unless this patch is obviously broken).</div>
 <?php endif; ?>
 
@@ -50,15 +50,21 @@ and executed by others, we advise you to add an additional patch instead of edit
 	<label class="control-label">Status:</label>
 	<div class="controls">
 		<label>
-		<input type="radio" name="status" value="skipped" <?php if ($this->status == "skipped") { echo "checked='checked'"; } ?>></input>
+		<input type="radio" name="status" value="skipped" <?php if ($this->status == 'skipped') {
+    echo "checked='checked'";
+} ?>></input>
 		The patch has already been executed on my database. Mark it as <span class="label label-info">skipped</span>.
 		</label>
 		<label>
-		<input type="radio" name="status" value="saveandexecute" <?php if ($this->status == "saveandexecute") { echo "checked='checked'"; } ?>></input>
+		<input type="radio" name="status" value="saveandexecute" <?php if ($this->status == 'saveandexecute') {
+    echo "checked='checked'";
+} ?>></input>
 		The patch has not yet been executed on my database. <strong>Save and</strong> <span class="label label-success">apply</span> the patch.
 		</label>
 		<label>
-		<input type="radio" name="status" value="awaiting" <?php if ($this->status == "awaiting") { echo "checked='checked'"; } ?>></input>
+		<input type="radio" name="status" value="awaiting" <?php if ($this->status == 'awaiting') {
+    echo "checked='checked'";
+} ?>></input>
 		The patch has not yet been executed on my database. <strong>Save</strong> but <span class="label">do not apply</span> the patch. Mark the patch "<strong>awaiting execution</strong>".
 		</label>
 	</div>
@@ -132,11 +138,11 @@ $(function() {
 		if (upSqlFileName == "database/up/"+removeFirstWord(uniqueName)+".sql") {
 			$('input[name=upSqlFileName]').val("database/up/"+removeFirstWord(newUniqueName)+".sql");
 		}
-		
+
 		if (downSqlFileName == "database/down/"+removeFirstWord(uniqueName)+".sql") {
 			$('input[name=downSqlFileName]').val("database/down/"+removeFirstWord(newUniqueName)+".sql");
 		}
-		
+
 		uniqueName = newUniqueName;
 	});
 
