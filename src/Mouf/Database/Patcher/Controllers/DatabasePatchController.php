@@ -1,6 +1,7 @@
 <?php
 namespace Mouf\Database\Patcher\Controllers;
 
+use Mouf\ClassProxy;
 use Mouf\Controllers\AbstractMoufInstanceController;
 
 use Mouf\Database\TDBM\Utils\TDBMDaoGenerator;
@@ -66,6 +67,10 @@ class DatabasePatchController extends AbstractMoufInstanceController {
 			$this->oldUniqueName = "";
 			$this->upSqlFileName = "database/up/".date("YmdHis")."-patch.sql";
 			$this->downSqlFileName = "database/down/".date("YmdHis")."-patch.sql";
+            $databasePatchClass = new ClassProxy('Mouf\\Database\\Patcher\\DatabasePatch', $selfedit == "true");
+            $result = $databasePatchClass->generateUpAndDonwSqlPatches();
+            $this->upSql = implode(";\n", $result['upPatch']).";\n";
+            $this->downSql = implode(";\n", $result['downPatch']).";\n";
 		} else {
 			$patchDescriptor = $this->moufManager->getInstanceDescriptor($this->patchInstanceName);
 			

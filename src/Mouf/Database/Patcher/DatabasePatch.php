@@ -20,17 +20,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 namespace Mouf\Database\Patcher;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\Schema;
 use Mouf\Utils\Patcher\PatchInterface;
 use Doctrine\DBAL\Driver;
 use Mouf\Utils\Patcher\PatchException;
 use Mouf\MoufManager;
+use Mouf\Validator\MoufStaticValidatorInterface;
+use Mouf\Validator\MoufValidatorResult;
 
 /**
  * Classes implementing this interface reprensent patches that can be applied on the application.
  * 
  * @author David Negrier <david@mouf-php.com>
  */
-class DatabasePatch implements PatchInterface {
+class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface {
 
 	private $uniqueName;
 	private $upSqlFile;
@@ -71,6 +74,7 @@ class DatabasePatch implements PatchInterface {
 				throw new PatchException("An error occured while applying patch '".$this->getUniqueName()."': the file '".$this->upSqlFile."' cannot be found.");
 			}
 			$this->executeSqlFile(ROOT_PATH.$this->upSqlFile);
+            $this->saveDbSchema();
 		} catch (\Exception $e) {
 			// On error, let's mark this in database.
 			$this->savePatch(PatchInterface::STATUS_ERROR, $e->getMessage());
@@ -83,6 +87,7 @@ class DatabasePatch implements PatchInterface {
 	 * @see \Mouf\Utils\Patcher\PatchInterface::skip()
 	 */
 	public function skip() {
+        $this->saveDbSchema();
 		$this->createPatchesTable();
 		$this->savePatch(PatchInterface::STATUS_SKIPPED, null);	
 	}
@@ -100,6 +105,7 @@ class DatabasePatch implements PatchInterface {
 				throw new PatchException("An error occured while applying patch '".$this->getUniqueName()."': the file '".$this->downSqlFile."' cannot be found.");
 			}
 			$this->executeSqlFile(ROOT_PATH.$this->downSqlFile);
+            $this->saveDbSchema();
 		} catch (\Exception $e) {
 			// On error, let's mark this in database.
 			$this->savePatch(PatchInterface::STATUS_ERROR, $e->getMessage());
@@ -270,4 +276,45 @@ class DatabasePatch implements PatchInterface {
 		return "dbpatch/?patchInstanceName=".urlencode(MoufManager::getMoufManager()->findInstanceName($this));
 	}
 
+    private function saveDbSchema(){
+        $schema = $this->dbalConnection->getSchemaManager()->createSchema();
+        file_put_contents(__DIR__.'/../../../../generated/schema', serialize($schema));
+    }
+
+    /**
+     * Compare the current schema of your database with the old one, and create an up and down sql patch.
+     * @return array
+     */
+    public static function generateUpAndDonwSqlPatches(){
+        $result = array();
+        $fileName = __DIR__.'/../../../../generated/schema';
+        $dbalConnection  = \Mouf::getDbalConnection();
+        if(file_exists($fileName)){
+            $oldSchema = unserialize(file_get_contents($fileName));
+            }else{
+            $oldSchema = new Schema();
+        }
+        $currentSchema = $dbalConnection->getSchemaManager()->createSchema();
+        $comparator = new \Doctrine\DBAL\Schema\Comparator();
+        $schemaDiffUp = $comparator->compare($oldSchema, $currentSchema);
+        $schemaDiffDown = $comparator->compare($currentSchema, $oldSchema);
+        $result['upPatch'] = $schemaDiffUp->toSql($dbalConnection->getDatabasePlatform()); // queries to get from one to another schema.
+        $result['downPatch'] = $schemaDiffDown->toSql($dbalConnection->getDatabasePlatform()); // queries to get from one to another schema.
+        return $result;
+    }
+
+    /**
+     * Runs the validation of the class.
+     * Returns a MoufValidatorResult explaining the result.
+     *
+     * @return MoufValidatorResult
+     */
+    public static function validateClass() {
+        $result = self::generateUpAndDonwSqlPatches();
+        if ($result['upPatch']) {
+            return new MoufValidatorResult(MoufValidatorResult::WARN, '<strong>Database Patcher</strong>: Your database model has been modified, <a href="'.ROOT_URL.'vendor/mouf/mouf/dbpatch/?name=patchService" class="btn btn-large btn-success patch-run-all"><i class="icon-arrow-right icon-white"></i>please register a new patch.</a>');
+        }else{
+            return new MoufValidatorResult(MoufValidatorResult::SUCCESS, "<strong>Database Patcher</strong>: Your database model hasn't been modified");
+        }
+    }
 }
