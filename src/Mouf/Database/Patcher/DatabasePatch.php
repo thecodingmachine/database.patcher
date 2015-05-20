@@ -296,6 +296,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     {
         $schema = $this->dbalConnection->getSchemaManager()->createSchema();
         file_put_contents(__DIR__.'/../../../../generated/schema', serialize($schema));
+        chmod(__DIR__.'/../../../../generated/schema', 0664);
     }
 
     /**
