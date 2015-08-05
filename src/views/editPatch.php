@@ -73,11 +73,11 @@ and executed by others, we advise you to add an additional patch instead of edit
 
 <div class="control-group">
 	<div class="controls">
-		<button id="moreoptionsbutton" value="generate" type="button" class="btn btn-info">More options</button>
+		<button id="moreoptionsbutton" value="generate" type="button" class="btn btn-info" style="<?php if(!empty($this->downSql)) { echo 'display:none'; } ?>">More options</button>
 	</div>
 </div>
 
-<div id="additionaloptions" style="display:none">
+<div id="additionaloptions" style="<?php if(empty($this->downSql)) { echo 'display:none'; } ?>">
 <div class="control-group">
 	<label class="control-label">File name:</label>
 	<div class="controls">

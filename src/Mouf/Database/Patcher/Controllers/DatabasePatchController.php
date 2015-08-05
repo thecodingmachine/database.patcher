@@ -32,8 +32,8 @@ class DatabasePatchController extends AbstractMoufInstanceController
     protected $uniqueName;
     protected $oldUniqueName;
     protected $description;
-    protected $upSql;
-    protected $downSql;
+    protected $upSql = "";
+    protected $downSql = "";
     protected $upSqlFileName;
     protected $downSqlFileName;
     protected $status;
@@ -61,11 +61,13 @@ class DatabasePatchController extends AbstractMoufInstanceController
             $this->uniqueName = UniqueIdService::getUniqueId().'-'.date('YmdHis').'-patch';
             $this->oldUniqueName = '';
             $this->upSqlFileName = 'database/up/'.date('YmdHis').'-patch.sql';
-            $this->downSqlFileName = 'database/down/'.date('YmdHis').'-patch.sql';
             $databasePatchClass = new ClassProxy('Mouf\\Database\\Patcher\\DatabasePatch', $selfedit == 'true');
             $result = $databasePatchClass->generateUpAndDonwSqlPatches();
-            $this->upSql = implode(";\n", $result['upPatch']).";\n";
-            $this->downSql = implode(";\n", $result['downPatch']).";\n";
+            if(isset($result['upPatch'][0]) && !empty($result['upPatch'][0])){
+                $this->upSql = implode(";\n", $result['upPatch']).";\n";
+                $this->downSql = implode(";\n", $result['downPatch']).";\n";
+                $this->downSqlFileName = 'database/down/'.date('YmdHis').'-patch.sql';
+            }
         } else {
             $patchDescriptor = $this->moufManager->getInstanceDescriptor($this->patchInstanceName);
 
