@@ -20,7 +20,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace Mouf\Database\Patcher;
 
+use Mouf\ClassProxy;
+use Mouf\InstanceProxy;
 use Mouf\MoufManager;
+use Mouf\UniqueIdService;
 
 /**
  * This utility class is in charge of registering a new database patch in the patch system.
@@ -75,5 +78,56 @@ class DatabasePatchInstaller
             $patchs[] = $patchDescriptor;
             $patchManager->getProperty('patchs')->setValue($patchs);
         }
+    }
+
+    public static function generatePatch(MoufManager $moufManager, $description, $instanceName, $selfedit = 'false')
+    {
+        // First, let's find if this patch already exists... We assume that $uniqueName = "dbpatch.$instanceName".
+        $uniqueName = UniqueIdService::getUniqueId().'-'.date('YmdHis').'-patch';
+        // If the patch already exists, we go in edit mode.
+        if ($moufManager->has('dbpatch.'.$uniqueName)) {
+            $patchDescriptor = $moufManager->getInstanceDescriptor('dbpatch.'.$uniqueName);
+            $exists = true;
+        } else {
+            $patchDescriptor = $moufManager->createInstance("Mouf\\Database\\Patcher\\DatabasePatch");
+            $patchDescriptor->setName('dbpatch.'.$uniqueName);
+            $exists = false;
+        }
+
+        $patchDescriptor->getProperty('uniqueName')->setValue($uniqueName);
+        $patchDescriptor->getProperty('description')->setValue($description);
+        $patchDescriptor->getProperty('dbalConnection')->setValue($moufManager->getInstanceDescriptor('dbalConnection'));
+
+        $upSqlFileName = 'database/up/'.date('YmdHis').'-patch.sql';
+        $databasePatchClass = new ClassProxy('Mouf\\Database\\Patcher\\DatabasePatch', $selfedit == 'true');
+        $result = $databasePatchClass->generateUpAndDonwSqlPatches();
+        if(isset($result['upPatch'][0]) && !empty($result['upPatch'][0])){
+            $upSql = implode(";\n", $result['upPatch']).";\n";
+            $downSql = implode(";\n", $result['downPatch']).";\n";
+            $downSqlFileName = 'database/down/'.date('YmdHis').'-patch.sql';
+        }
+
+        // Let's create the directory
+        $baseDirSqlFile = ROOT_PATH.'../../../';
+
+        file_put_contents($baseDirSqlFile.'/'.$upSqlFileName, $upSql);
+        file_put_contents($baseDirSqlFile.'/'.$downSqlFileName, $downSql);
+        $patchDescriptor->getProperty('upSqlFile')->setValue($upSqlFileName);
+        $patchDescriptor->getProperty('downSqlFile')->setValue($downSqlFileName);
+        // Register the patch in the patchService.
+        $patchManager = $moufManager->getInstanceDescriptor('patchService');
+        if (!$exists) {
+            $patchs = $patchManager->getProperty('patchs')->getValue();
+            if ($patchs === null) {
+                $patchs = array();
+            }
+            $patchs[] = $patchDescriptor;
+            $patchManager->getProperty('patchs')->setValue($patchs);
+        }
+        $moufManager->rewriteMouf();
+        // Now, let's mark this patch as "skipped".
+        $patchService = new InstanceProxy('patchService');
+        $patchService->skip($uniqueName);
+
     }
 }
