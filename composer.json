@@ -2,7 +2,7 @@
     "name": "mouf/database.patcher",
     "description": "A database patch system designed for Mouf than enables developers to know what patch has been run and what needs to be run on its environment. This package adds database support to the Mouf patch system (mouf/utils.patcher).",
     "keywords": ["mouf", "patch", "database"],
-    "homepage": "https://mouf-php.com/mouf/database.patcher",
+    "homepage": "http://mouf-php.com/packages/mouf/database.patcher",
     "type": "mouf-library",
     "license": "MIT",
     "authors": [
