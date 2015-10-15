@@ -16,6 +16,13 @@ you can register the patch on your development environment and play the patch ba
 and executed by others, we advise you to add an additional patch instead of editing this one (unless this patch is obviously broken).</div>
 <?php endif; ?>
 
+<?php if ($this->upAndDownException): ?>
+<div class="alert"><strong>Warning!</strong> A problem occurred while trying to propose a patch automatically based on your
+previously saved data model. Please review the logs to see the error.</div>
+
+<?php endif; ?>
+
+
 <form action="save" method="post" class="form-horizontal">
 <input type="hidden" id="name" name="name" value="<?php echo plainstring_to_htmlprotected($this->instanceName) ?>" />
 <input type="hidden" id="patchInstanceName" name="patchInstanceName" value="<?php echo plainstring_to_htmlprotected($this->patchInstanceName) ?>" />
