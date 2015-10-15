@@ -37,6 +37,7 @@ class DatabasePatchController extends AbstractMoufInstanceController
     protected $upSqlFileName;
     protected $downSqlFileName;
     protected $status;
+    protected $upAndDownException;
 
     /**
      * Page used to register a new patch / edit an existing patch.
@@ -62,11 +63,16 @@ class DatabasePatchController extends AbstractMoufInstanceController
             $this->oldUniqueName = '';
             $this->upSqlFileName = 'database/up/'.date('YmdHis').'-patch.sql';
             $databasePatchClass = new ClassProxy('Mouf\\Database\\Patcher\\DatabasePatch', $selfedit == 'true');
-            $result = $databasePatchClass->generateUpAndDonwSqlPatches();
-            if(isset($result['upPatch'][0]) && !empty($result['upPatch'][0])){
-                $this->upSql = implode(";\n", $result['upPatch']).";\n";
-                $this->downSql = implode(";\n", $result['downPatch']).";\n";
-                $this->downSqlFileName = 'database/down/'.date('YmdHis').'-patch.sql';
+            try {
+                $result = $databasePatchClass->generateUpAndDonwSqlPatches();
+                if (isset($result['upPatch'][0]) && !empty($result['upPatch'][0])) {
+                    $this->upSql = implode(";\n", $result['upPatch']) . ";\n";
+                    $this->downSql = implode(";\n", $result['downPatch']) . ";\n";
+                    $this->downSqlFileName = 'database/down/' . date('YmdHis') . '-patch.sql';
+                }
+            } catch (\Exception $e) {
+                error_log($e->getMessage()."\n".$e->getTraceAsString());
+                $this->upAndDownException = $e;
             }
         } else {
             $patchDescriptor = $this->moufManager->getInstanceDescriptor($this->patchInstanceName);
