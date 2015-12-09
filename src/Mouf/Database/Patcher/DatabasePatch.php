@@ -128,11 +128,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     {
         $this->checkdbalConnection();
         // First, let's check that the patches table exists and let's create the table if it does not.
-        $tables = $this->dbalConnection->getSchemaManager()->listTableNames();
-        if (array_search('patches', $tables) === false) {
-            // Let's create the table.
-            $result = $this->executeSqlFile(__DIR__.'/../../../../database/create_patches_table.sql');
-        }
+        DatabasePatchInstaller::createPatchTable($this->dbalConnection);
     }
 
     /**
