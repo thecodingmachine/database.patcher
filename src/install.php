@@ -10,7 +10,7 @@ require_once __DIR__.'/../../../autoload.php';
 
 use Mouf\Actions\InstallUtils;
 use Mouf\MoufManager;
-use Mouf\Database\DBConnection\ConnectionInterface;
+use Doctrine\DBAL\Connection;
 
 // Let's init Mouf
 InstallUtils::init(InstallUtils::$INIT_APP);
@@ -19,7 +19,7 @@ $moufManager = MoufManager::getMoufManager();
 
 // Let's create the table.
 $dbConnection = $moufManager->get('dbalConnection');
-/* @var $dbConnection ConnectionInterface */
+/* @var $dbConnection Connection */
 
 $existingPatches = $moufManager->findInstances("Mouf\\Database\\Patcher\\DatabasePatch");
 $dbConnectionDescriptor = $moufManager->getInstanceDescriptor('dbalConnection');
@@ -28,7 +28,8 @@ foreach($existingPatches as $existingPatche){
     $patchIntance->getProperty('dbalConnection')->setValue($dbConnectionDescriptor);
 }
 $moufManager->rewriteMouf();
-$dbConnection->exec(file_get_contents(__DIR__.'/../database/create_patches_table.sql'));
+//Create patches table
+\Mouf\Database\Patcher\DatabasePatchInstaller::createPatchTable($dbConnection);
 
 // Finally, let's continue the install
 InstallUtils::continueInstall();

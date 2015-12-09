@@ -20,6 +20,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace Mouf\Database\Patcher;
 
+use Doctrine\DBAL\Connection;
 use Mouf\ClassProxy;
 use Mouf\InstanceProxy;
 use Mouf\MoufManager;
@@ -129,5 +130,21 @@ class DatabasePatchInstaller
         $patchService = new InstanceProxy('patchService');
         $patchService->skip($uniqueName);
 
+    }
+
+    /**
+     *
+     */
+    public static function createPatchTable(Connection $dbalConnection) {
+        if(!$dbalConnection->getSchemaManager()->tablesExist(array('patches'))){
+            $sm = $dbalConnection->getSchemaManager();
+            $table = new \Doctrine\DBAL\Schema\Table('patches');
+            $table->addColumn('id', 'integer', array('autoincrement' => true));
+            $table->addColumn('unique_name', 'string', array("length" => 255, 'customSchemaOptions' => array('unique' => true)));
+            $table->addColumn('status', 'string', array("length" => 10));
+            $table->addColumn('exec_date', 'datetime');
+            $table->addColumn('error_message', 'text');
+            $sm->createTable($table);
+        }
     }
 }
