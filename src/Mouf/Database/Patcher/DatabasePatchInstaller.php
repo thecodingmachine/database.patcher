@@ -136,6 +136,12 @@ class DatabasePatchInstaller
      *
      */
     public static function createPatchTable(Connection $dbalConnection) {
+        // Note: the "patches" table is most of the time filtered out.
+        // Lets disable filters.
+
+        $filterSchemaAssetExpression = $dbalConnection->getConfiguration()->getFilterSchemaAssetsExpression();
+        $dbalConnection->getConfiguration()->setFilterSchemaAssetsExpression(null);
+
         if(!$dbalConnection->getSchemaManager()->tablesExist(array('patches'))){
             $sm = $dbalConnection->getSchemaManager();
             $table = new \Doctrine\DBAL\Schema\Table('patches');
@@ -146,5 +152,7 @@ class DatabasePatchInstaller
             $table->addColumn('error_message', 'text');
             $sm->createTable($table);
         }
+
+        $dbalConnection->getConfiguration()->setFilterSchemaAssetsExpression($filterSchemaAssetExpression);
     }
 }
