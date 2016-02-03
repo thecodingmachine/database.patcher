@@ -150,6 +150,7 @@ class DatabasePatchInstaller
             $table->addColumn('status', 'string', array("length" => 10));
             $table->addColumn('exec_date', 'datetime');
             $table->addColumn('error_message', 'text');
+            $table->setPrimaryKey(['id']);
             $sm->createTable($table);
         }
 
