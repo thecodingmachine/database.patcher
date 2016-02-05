@@ -149,7 +149,7 @@ class DatabasePatchInstaller
             $table->addColumn('unique_name', 'string', array("length" => 255, 'customSchemaOptions' => array('unique' => true)));
             $table->addColumn('status', 'string', array("length" => 10));
             $table->addColumn('exec_date', 'datetime');
-            $table->addColumn('error_message', 'text');
+            $table->addColumn('error_message', 'text', ['notnull' => false]);
             $table->setPrimaryKey(['id']);
             $sm->createTable($table);
         }
