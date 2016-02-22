@@ -23,18 +23,18 @@
         }
     },
     "extra": {
-	     "mouf": {
-			"install": [
-			{
-				"type": "file",
-	    		"file": "src/install.php",
-	    		"description": "Create the 'patches' table in your database to track patches applied."
-			}
-			],
-			"require-admin": [
-    			"src/DBPatchAdmin.php"
-    			],
-			"logo": "icon.png"
+	    "mouf": {
+            "install": [
+                {
+                  "type": "class",
+                  "class": "Mouf\\Database\\Patcher\\DatabasePatchInstaller",
+                  "description": "Create the 'patches' table in your database to track patches applied."
+                }
+            ],
+            "require-admin": [
+    		    "src/DBPatchAdmin.php"
+            ],
+		    "logo": "icon.png"
  		}
     }
 }

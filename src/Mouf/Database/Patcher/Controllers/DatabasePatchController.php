@@ -100,7 +100,7 @@ class DatabasePatchController extends AbstractMoufInstanceController
         }
         $this->status = 'skipped';
 
-        $this->content->addFile(dirname(__FILE__).'/../../../../views/editPatch.php', $this);
+        $this->content->addFile(__DIR__'/../../../../views/editPatch.php', $this);
         $this->template->toHtml();
     }
 

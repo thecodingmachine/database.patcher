@@ -22,6 +22,7 @@ namespace Mouf\Database\Patcher;
 
 use Doctrine\DBAL\Connection;
 use Mouf\ClassProxy;
+use Mouf\Installer\PackageInstallerInterface;
 use Mouf\InstanceProxy;
 use Mouf\MoufManager;
 use Mouf\UniqueIdService;
@@ -33,8 +34,45 @@ use Mouf\UniqueIdService;
  *
  * @author David Negrier <david@mouf-php.com>
  */
-class DatabasePatchInstaller
+class DatabasePatchInstaller implements PackageInstallerInterface
 {
+    /**
+     * (non-PHPdoc)
+     * @see \Mouf\Installer\PackageInstallerInterface::install()
+     * @param MoufManager $moufManager
+     * @throws \Mouf\MoufException
+     */
+    public static function install(MoufManager $moufManager) {
+        // Let's create the table.
+        $dbConnection = $moufManager->get('dbalConnection');
+        /* @var $dbConnection Connection */
+
+        $existingPatches = $moufManager->findInstances("Mouf\\Database\\Patcher\\DatabasePatch");
+        $dbConnectionDescriptor = $moufManager->getInstanceDescriptor('dbalConnection');
+        foreach($existingPatches as $existingPatche){
+            $patchIntance = $moufManager->getInstanceDescriptor($existingPatche);
+            $patchIntance->getProperty('dbalConnection')->setValue($dbConnectionDescriptor);
+        }
+
+        // Finally, let's change the dbalConnection configuration to add an ignore rule on the "patches" table.
+        $configArgument = $dbConnectionDescriptor->getConstructorArgumentProperty('config');
+        $config = $configArgument->getValue();
+        if ($config === null) {
+            $config = $moufManager->createInstance("Doctrine\\DBAL\\Configuration");
+            $config->setName('doctrineDbalConfiguration');
+
+            $configArgument->setValue($config);
+        }
+
+        if ($config->getProperty('filterSchemaAssetsExpression')->getValue() === null) {
+            $config->getProperty('filterSchemaAssetsExpression')->setValue('/^(?!patches$).*/');
+        }
+
+        $moufManager->rewriteMouf();
+        //Create patches table
+        self::createPatchTable($dbConnection);
+    }
+
     /**
      * Registers a database patch in the patch system.
      * Note: the patch will not be executed, only registered in "Awaiting" state.
