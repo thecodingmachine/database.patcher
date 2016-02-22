@@ -300,7 +300,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @return array
      */
-    public static function generateUpAndDonwSqlPatches()
+    public static function generateUpAndDownSqlPatches()
     {
         $result = array();
         $fileName = __DIR__.'/../../../../generated/schema';
@@ -327,7 +327,12 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      */
     public static function validateClass()
     {
-        $result = self::generateUpAndDonwSqlPatches();
+        $fileName = __DIR__.'/../../../../generated/schema';
+        if (!file_exists($fileName)) {
+            return new MoufValidatorResult(MoufValidatorResult::SUCCESS, "<strong>Database Patcher</strong>: You haven't generated yet a patch on the database model from this computer");
+        }
+
+        $result = self::generateUpAndDownSqlPatches();
         if ($result['upPatch']) {
             return new MoufValidatorResult(MoufValidatorResult::WARN, '<strong>Database Patcher</strong>: Your database model has been modified, <a href="'.ROOT_URL.'vendor/mouf/mouf/dbpatch/?name=patchService" class="btn btn-large btn-success patch-run-all"><i class="icon-arrow-right icon-white"></i>please register a new patch.</a>');
         } else {
