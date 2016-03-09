@@ -43,6 +43,12 @@ class DatabasePatchInstaller implements PackageInstallerInterface
      * @throws \Mouf\MoufException
      */
     public static function install(MoufManager $moufManager) {
+        // Let's create the constant PATCHES_TABLE in config
+        $configManager = $moufManager->getConfigManager();
+        if (!isset($constants['PATCHES_TABLE'])) {
+            $configManager->registerConstant("PATCHES_TABLE", "string", "patches", "The name of table that will contain the patches.");
+        }
+
         // Let's create the table.
         $dbConnection = $moufManager->get('dbalConnection');
         /* @var $dbConnection Connection */
@@ -65,7 +71,7 @@ class DatabasePatchInstaller implements PackageInstallerInterface
         }
 
         if ($config->getProperty('filterSchemaAssetsExpression')->getValue() === null) {
-            $config->getProperty('filterSchemaAssetsExpression')->setValue('/^(?!patches$).*/');
+            $config->getProperty('filterSchemaAssetsExpression')->setValue('/^(?!'.TABLE_PATCHES.'$).*/');
         }
 
         $moufManager->rewriteMouf();
@@ -180,9 +186,9 @@ class DatabasePatchInstaller implements PackageInstallerInterface
         $filterSchemaAssetExpression = $dbalConnection->getConfiguration()->getFilterSchemaAssetsExpression();
         $dbalConnection->getConfiguration()->setFilterSchemaAssetsExpression(null);
 
-        if(!$dbalConnection->getSchemaManager()->tablesExist(array('patches'))){
+        if(!$dbalConnection->getSchemaManager()->tablesExist(array(PATCHES_TABLE))){
             $sm = $dbalConnection->getSchemaManager();
-            $table = new \Doctrine\DBAL\Schema\Table('patches');
+            $table = new \Doctrine\DBAL\Schema\Table(PATCHES_TABLE);
             $table->addColumn('id', 'integer', array('autoincrement' => true));
             $table->addColumn('unique_name', 'string', array("length" => 255, 'customSchemaOptions' => array('unique' => true)));
             $table->addColumn('status', 'string', array("length" => 10));
