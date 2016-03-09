@@ -145,7 +145,7 @@ class DatabasePatchInstaller implements PackageInstallerInterface
 
         $upSqlFileName = 'database/up/'.date('YmdHis').'-patch.sql';
         $databasePatchClass = new ClassProxy('Mouf\\Database\\Patcher\\DatabasePatch', $selfedit == 'true');
-        $result = $databasePatchClass->generateUpAndDonwSqlPatches();
+        $result = $databasePatchClass->generateUpAndDownSqlPatches();
         if(isset($result['upPatch'][0]) && !empty($result['upPatch'][0])){
             $upSql = implode(";\n", $result['upPatch']).";\n";
             $downSql = implode(";\n", $result['downPatch']).";\n";

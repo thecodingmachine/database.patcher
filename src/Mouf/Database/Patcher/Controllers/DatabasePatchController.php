@@ -64,7 +64,7 @@ class DatabasePatchController extends AbstractMoufInstanceController
             $this->upSqlFileName = 'database/up/'.date('YmdHis').'-patch.sql';
             $databasePatchClass = new ClassProxy('Mouf\\Database\\Patcher\\DatabasePatch', $selfedit == 'true');
             try {
-                $result = $databasePatchClass->generateUpAndDonwSqlPatches();
+                $result = $databasePatchClass->generateUpAndDownSqlPatches();
                 if (isset($result['upPatch'][0]) && !empty($result['upPatch'][0])) {
                     $this->upSql = implode(";\n", $result['upPatch']) . ";\n";
                     $this->downSql = implode(";\n", $result['downPatch']) . ";\n";
