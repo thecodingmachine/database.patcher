@@ -71,7 +71,7 @@ class DatabasePatchInstaller implements PackageInstallerInterface
         }
 
         if ($config->getProperty('filterSchemaAssetsExpression')->getValue() === null) {
-            $config->getProperty('filterSchemaAssetsExpression')->setValue('/^(?!'.TABLE_PATCHES.'$).*/');
+            $config->getProperty('filterSchemaAssetsExpression')->setValue('/^(?!'.PATCHES_TABLE.'$).*/');
         }
 
         $moufManager->rewriteMouf();
