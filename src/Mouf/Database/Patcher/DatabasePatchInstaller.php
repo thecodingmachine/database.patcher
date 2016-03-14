@@ -133,4 +133,29 @@ class DatabasePatchInstaller
         $patchService->skip($uniqueName);
 
     }
+
+    /**
+     * @param PatchConnection $patchConnection
+     */
+    public static function createPatchTable(PatchConnection $patchConnection) {
+        // Note: the "patches" table is most of the time filtered out.
+        // Lets disable filters.
+
+        $filterSchemaAssetExpression = $patchConnection->getConnection()->getConfiguration()->getFilterSchemaAssetsExpression();
+        $patchConnection->getConnection()->getConfiguration()->setFilterSchemaAssetsExpression(null);
+
+        if(!$patchConnection->getConnection()->getSchemaManager()->tablesExist(array($patchConnection->getTableName()))) {
+            $sm = $patchConnection->getConnection()->getSchemaManager();
+            $table = new \Doctrine\DBAL\Schema\Table($patchConnection->getTableName());
+            $table->addColumn('id', 'integer', array('autoincrement' => true));
+            $table->addColumn('unique_name', 'string', array("length" => 255, 'customSchemaOptions' => array('unique' => true)));
+            $table->addColumn('status', 'string', array("length" => 10));
+            $table->addColumn('exec_date', 'datetime');
+            $table->addColumn('error_message', 'text', ['notnull' => false]);
+            $table->setPrimaryKey(['id']);
+            $sm->createTable($table);
+        }
+
+        $patchConnection->getConnection()->getConfiguration()->setFilterSchemaAssetsExpression($filterSchemaAssetExpression);
+    }
 }

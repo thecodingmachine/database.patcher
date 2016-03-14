@@ -83,11 +83,11 @@ class DatabasePatchInstaller2 implements PackageInstallerInterface
 
         $moufManager->rewriteMouf();
         //Create patches table
-        self::createPatchTable($patchConnection);
+        DatabasePatchInstaller::createPatchTable($patchConnection);
     }
 
     /**
-     *
+     * @param PatchConnection $patchConnection
      */
     public static function createPatchTable(PatchConnection $patchConnection) {
         // Note: the "patches" table is most of the time filtered out.
