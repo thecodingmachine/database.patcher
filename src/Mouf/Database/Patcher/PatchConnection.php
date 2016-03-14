@@ -20,13 +20,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace Mouf\Database\Patcher;
 
+use Doctrine\DBAL\Connection;
+
 
 /**
  * Class representing the patches table in database
  *
  * @author Pierre Vaidie
  */
-class DatabasePatchTable
+class PatchConnection
 {
     /**
      * @var string
@@ -34,12 +36,19 @@ class DatabasePatchTable
     private $tableName;
 
     /**
-     * DatabasePatchTable constructor.
-     * @param  string $tableName
+     * @var Connection
      */
-    public function __construct($tableName)
+    private $dbalConnection;
+
+    /**
+     * DatabasePatchTable constructor.
+     * @param  string      $tableName
+     * @param  Connection  $dbalConnection
+     */
+    public function __construct($tableName, Connection $dbalConnection)
     {
         $this->tableName = $tableName;
+        $this->dbalConnection = $dbalConnection;
     }
 
     /**
@@ -58,5 +67,23 @@ class DatabasePatchTable
      */
     public function setTableName($tableName) {
         $this->tableName = $tableName;
+    }
+
+    /**
+     * Getter
+     *
+     * @return Connection
+     */
+    public function getConnection() {
+        return $this->dbalConnection;
+    }
+
+    /**
+     * Setter
+     *
+     * @param string Connection
+     */
+    public function setConnnection($dbalConnection) {
+        $this->dbalConnection = $dbalConnection;
     }
 }
