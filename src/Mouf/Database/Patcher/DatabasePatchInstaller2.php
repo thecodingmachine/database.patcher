@@ -44,15 +44,14 @@ class DatabasePatchInstaller2 implements PackageInstallerInterface
      * @throws \Mouf\MoufException
      */
     public static function install(MoufManager $moufManager) {
-        // Let's get the database connection (i.e. the instance 'dbalConnection')
-        $dbConnection = $moufManager->get('dbalConnection');
+        // Let's get the database connection descriptor
         $dbConnectionDescriptor = $moufManager->getInstanceDescriptor('dbalConnection');
 
         //Let's get the instance of PatchConnection or create it if not exist
-        try {
+       if ($moufManager->has('patchConnection')) {
             $patchConnection = $moufManager->get('patchConnection');
             $patchConnectionDescriptor = $moufManager->getInstanceDescriptor('patchConnection');
-        } catch (MoufInstanceNotFoundException $e) {
+        } else {
             $patchConnectionDescriptor = $moufManager->createInstance("Mouf\\Database\\Patcher\\PatchConnection");
             $patchConnectionDescriptor->setName('patchConnection');
             $patchConnectionDescriptor->getProperty('tableName')->setValue('patches');
