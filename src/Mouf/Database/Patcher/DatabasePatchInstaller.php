@@ -83,6 +83,7 @@ class DatabasePatchInstaller
         }
     }
 
+
     public static function generatePatch(MoufManager $moufManager, $description, $instanceName, $selfedit = 'false')
     {
         // First, let's find if this patch already exists... We assume that $uniqueName = "dbpatch.$instanceName".
