@@ -205,7 +205,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
                         $query = trim(implode('', $query));
 
                         try {
-                            $this->dbalConnection->exec($query);
+                            $this->patchConnection->getConnection()->exec($query);
                         } catch (\Exception $e) {
                             throw new \Exception('An error occurred while executing request: '.$query.' --- Error message: '.$e->getMessage(), 0, $e);
                         }
