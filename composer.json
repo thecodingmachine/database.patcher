@@ -27,7 +27,7 @@
             "install": [
                 {
                   "type": "class",
-                  "class": "Mouf\\Database\\Patcher\\DatabasePatchInstaller",
+                  "class": "Mouf\\Database\\Patcher\\DatabasePatchInstaller2",
                   "description": "Create the 'patches' table in your database to track patches applied."
                 }
             ],
