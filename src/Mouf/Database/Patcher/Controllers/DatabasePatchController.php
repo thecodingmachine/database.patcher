@@ -185,7 +185,7 @@ class DatabasePatchController extends AbstractMoufInstanceController
 
         $patchDescriptor->getProperty('uniqueName')->setValue($uniqueName);
         $patchDescriptor->getProperty('description')->setValue($description);
-        $patchDescriptor->getProperty('dbalConnection')->setValue($this->moufManager->getInstanceDescriptor('dbalConnection'));
+        $patchDescriptor->getProperty('patchConnection')->setValue($this->moufManager->getInstanceDescriptor('patchConnection'));
 
         if ($downSql == '') {
             $downSql = null;
