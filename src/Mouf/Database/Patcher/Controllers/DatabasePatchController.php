@@ -108,6 +108,7 @@ class DatabasePatchController extends AbstractMoufInstanceController
      * Saves the db patch and the files.
      *
      * @Action
+     * @Logged
      *
      * @param string $name
      * @param string $patchInstanceName
