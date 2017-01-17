@@ -150,7 +150,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     {
         $this->createPatchesTable();
 
-        $status = $this->dbalConnection->fetchColumn('SELECT status FROM patches WHERE unique_name = ?', array($this->uniqueName));
+        $status = $this->dbalConnection->fetchColumn('SELECT status FROM '.PATCHES_TABLE.' WHERE unique_name = ?', array($this->uniqueName));
         if (!$status) {
             return PatchInterface::STATUS_AWAITING;
         }
@@ -231,9 +231,9 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     private function savePatch($status, $error_message)
     {
         $this->checkdbalConnection();
-        $id = $this->dbalConnection->fetchColumn('SELECT id FROM patches WHERE unique_name = ?', array($this->uniqueName));
+        $id = $this->dbalConnection->fetchColumn('SELECT id FROM '.PATCHES_TABLE.' WHERE unique_name = ?', array($this->uniqueName));
         if ($id) {
-            $this->dbalConnection->update('patches',
+            $this->dbalConnection->update(PATCHES_TABLE,
                 array(
                     'unique_name' => $this->uniqueName,
                     'status' => $status,
@@ -245,7 +245,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
                 )
             );
         } else {
-            $this->dbalConnection->insert('patches',
+            $this->dbalConnection->insert(PATCHES_TABLE,
                 array(
                     'unique_name' => $this->uniqueName,
                     'status' => $status,
@@ -262,7 +262,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     public function getLastErrorMessage()
     {
         $this->checkdbalConnection();
-        $errorMessage = $this->dbalConnection->fetchColumn('SELECT error_message FROM patches WHERE unique_name = ?', array($this->uniqueName));
+        $errorMessage = $this->dbalConnection->fetchColumn('SELECT error_message FROM '.PATCHES_TABLE.' WHERE unique_name = ?', array($this->uniqueName));
         if (!$errorMessage) {
             return;
         }
