@@ -25,6 +25,7 @@ use Doctrine\DBAL\Schema\Schema;
 use Mouf\Utils\Patcher\PatchInterface;
 use Mouf\Utils\Patcher\PatchException;
 use Mouf\MoufManager;
+use Mouf\Utils\Patcher\PatchType;
 use Mouf\Validator\MoufStaticValidatorInterface;
 use Mouf\Validator\MoufValidatorResult;
 
@@ -44,6 +45,10 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      * @var PatchConnection
      */
     private $patchConnection;
+    /**
+     * @var PatchType
+     */
+    private $patchType;
 
     /**
      * @param PatchConnection $patchConnection  The connection that will be used to run the patch.
@@ -52,13 +57,14 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      * @param string          $downSqlFile
      * @param string          $description      The description for this patch.
      */
-    public function __construct(PatchConnection $patchConnection = null, $uniqueName = null, $upSqlFile = null, $downSqlFile = null, $description = null)
+    public function __construct(PatchConnection $patchConnection = null, $uniqueName = null, $upSqlFile = null, $downSqlFile = null, $description = null, PatchType $patchType = null)
     {
         $this->patchConnection = $patchConnection;
         $this->uniqueName = $uniqueName;
         $this->upSqlFile = $upSqlFile;
         $this->downSqlFile = $downSqlFile;
         $this->description = $description;
+        $this->patchType = $patchType;
     }
 
     /**
@@ -66,7 +72,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::apply()
      */
-    public function apply()
+    public function apply(): void
     {
         $this->createPatchesTable();
 
@@ -88,7 +94,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     /* (non-PHPdoc)
      * @see \Mouf\Utils\Patcher\PatchInterface::skip()
      */
-    public function skip()
+    public function skip(): void
     {
         $this->saveDbSchema();
         $this->createPatchesTable();
@@ -100,7 +106,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::revert()
      */
-    public function revert()
+    public function revert(): void
     {
         $this->createPatchesTable();
 
@@ -136,7 +142,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::canRevert()
      */
-    public function canRevert()
+    public function canRevert(): bool
     {
         return !empty($this->downSqlFile);
     }
@@ -146,7 +152,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::getStatus()
      */
-    public function getStatus()
+    public function getStatus(): string
     {
         $this->createPatchesTable();
 
@@ -163,7 +169,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::getUniqueName()
      */
-    public function getUniqueName()
+    public function getUniqueName(): string
     {
         return $this->uniqueName;
     }
@@ -173,7 +179,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::getDescription()
      */
-    public function getDescription()
+    public function getDescription(): string
     {
         return $this->description;
     }
@@ -259,12 +265,12 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     /* (non-PHPdoc)
      * @see \Mouf\Utils\Patcher\PatchInterface::getLastErrorMessage()
      */
-    public function getLastErrorMessage()
+    public function getLastErrorMessage(): ?string
     {
         $this->checkdbalConnection();
         $errorMessage = $this->patchConnection->getConnection()->fetchColumn('SELECT error_message FROM '.$this->patchConnection->getTableName().' WHERE unique_name = ?', array($this->uniqueName));
         if (!$errorMessage) {
-            return;
+            return null;
         }
 
         return $errorMessage;
@@ -283,7 +289,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     /* (non-PHPdoc)
      * @see \Mouf\Utils\Patcher\PatchInterface::getEditUrl()
      */
-    public function getEditUrl()
+    public function getEditUrl(): string
     {
         return 'dbpatch/?patchInstanceName='.urlencode(MoufManager::getMoufManager()->findInstanceName($this));
     }
@@ -338,5 +344,15 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
         } else {
             return new MoufValidatorResult(MoufValidatorResult::SUCCESS, "<strong>Database Patcher</strong>: Your database model hasn't been modified");
         }
+    }
+
+    /**
+     * Returns the type of the patch.
+     *
+     * @return PatchType
+     */
+    public function getPatchType(): PatchType
+    {
+        return $this->patchType;
     }
 }
