@@ -65,6 +65,10 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
         $this->downSqlFile = $downSqlFile;
         $this->description = $description;
         $this->patchType = $patchType;
+        if ($patchType === null) {
+            // In case no patch type is set, let's declare a default type (useful for migration purposes from old version where all patches have no type).
+            $this->patchType = new PatchType('', '');
+        }
     }
 
     /**
