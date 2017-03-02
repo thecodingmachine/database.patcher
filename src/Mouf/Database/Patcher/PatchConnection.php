@@ -63,6 +63,7 @@ class PatchConnection
     /**
      * Setter
      *
+     * @deprecated
      * @param string $tableName
      */
     public function setTableName($tableName) {
@@ -79,11 +80,10 @@ class PatchConnection
     }
 
     /**
-     * Setter
-     *
-     * @param string Connection
+     * @deprecated
+     * @param Connection $dbalConnection
      */
-    public function setConnnection($dbalConnection) {
+    public function setConnnection(Connection $dbalConnection) {
         $this->dbalConnection = $dbalConnection;
     }
 }
