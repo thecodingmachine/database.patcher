@@ -84,7 +84,12 @@ class DatabasePatchController extends AbstractMoufInstanceController
 
             $this->uniqueName = $patchDescriptor->getProperty('uniqueName')->getValue();
             $this->description = $patchDescriptor->getProperty('description')->getValue();
-            $this->selectedType = $patchDescriptor->getProperty('patchType')->getValue()->getIdentifierName();
+            $patchTypeDescriptor = $patchDescriptor->getProperty('patchType')->getValue();
+            if ($patchTypeDescriptor !== null) {
+                $this->selectedType = $patchDescriptor->getProperty('patchType')->getValue()->getIdentifierName();
+            } else {
+                $this->selectedType = '';
+            }
             $this->oldUniqueName = $this->uniqueName;
             $this->upSqlFileName = $patchDescriptor->getProperty('upSqlFile')->getValue();
             $this->downSqlFileName = $patchDescriptor->getProperty('downSqlFile')->getValue();
