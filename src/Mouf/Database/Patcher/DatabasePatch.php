@@ -214,6 +214,9 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
                     if (preg_match('~'.preg_quote(';', '~').'\s*$~iS', end($query)) === 1) {
                         $query = trim(implode('', $query));
 
+                        // Let's trim the ";" as they are not allowed by some databases (Oracle in particular)
+                        $query = trim($query, ';');
+
                         try {
                             $this->patchConnection->getConnection()->exec($query);
                         } catch (\Exception $e) {
