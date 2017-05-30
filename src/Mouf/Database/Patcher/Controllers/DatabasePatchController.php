@@ -64,10 +64,13 @@ class DatabasePatchController extends AbstractMoufInstanceController
         $this->types = $patchService->_getSerializedTypes();
 
         if ($patchInstanceName == null) {
-            $this->uniqueName = UniqueIdService::getUniqueId().'-'.date('YmdHis').'-patch';
+            $now = date('YmdHis');
+            $this->uniqueName = UniqueIdService::getUniqueId()."-$now-patch";
             $this->oldUniqueName = '';
-            $this->upSqlFileName = 'database/up/'.date('YmdHis').'-patch.sql';
-            $this->downSqlFileName = 'database/down/' . date('YmdHis') . '-patch.sql';
+
+            $this->upSqlFileName = 'database/up/' . $now . '-patch.sql';
+            $this->downSqlFileName = 'database/down/' . $now . '-patch.sql';
+          
             $databasePatchClass = new ClassProxy('Mouf\\Database\\Patcher\\DatabasePatch', $selfedit == 'true');
             try {
                 $result = $databasePatchClass->generateUpAndDownSqlPatches();
