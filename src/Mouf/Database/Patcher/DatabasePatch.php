@@ -296,7 +296,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     /* (non-PHPdoc)
      * @see \Mouf\Utils\Patcher\PatchInterface::getEditUrl()
      */
-    public function getEditUrl(): string
+    public function getEditUrl(): ?string
     {
         return 'dbpatch/?patchInstanceName='.urlencode(MoufManager::getMoufManager()->findInstanceName($this));
     }
