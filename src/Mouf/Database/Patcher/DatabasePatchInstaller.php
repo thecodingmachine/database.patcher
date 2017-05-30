@@ -24,6 +24,7 @@ use Doctrine\DBAL\Connection;
 use Mouf\ClassProxy;
 use Mouf\Installer\PackageInstallerInterface;
 use Mouf\InstanceProxy;
+use Mouf\MoufInstanceNotFoundException;
 use Mouf\MoufManager;
 use Mouf\UniqueIdService;
 
@@ -34,45 +35,8 @@ use Mouf\UniqueIdService;
  *
  * @author David Negrier <david@mouf-php.com>
  */
-class DatabasePatchInstaller implements PackageInstallerInterface
+class DatabasePatchInstaller
 {
-    /**
-     * (non-PHPdoc)
-     * @see \Mouf\Installer\PackageInstallerInterface::install()
-     * @param MoufManager $moufManager
-     * @throws \Mouf\MoufException
-     */
-    public static function install(MoufManager $moufManager) {
-        // Let's create the table.
-        $dbConnection = $moufManager->get('dbalConnection');
-        /* @var $dbConnection Connection */
-
-        $existingPatches = $moufManager->findInstances("Mouf\\Database\\Patcher\\DatabasePatch");
-        $dbConnectionDescriptor = $moufManager->getInstanceDescriptor('dbalConnection');
-        foreach($existingPatches as $existingPatche){
-            $patchIntance = $moufManager->getInstanceDescriptor($existingPatche);
-            $patchIntance->getProperty('dbalConnection')->setValue($dbConnectionDescriptor);
-        }
-
-        // Finally, let's change the dbalConnection configuration to add an ignore rule on the "patches" table.
-        $configArgument = $dbConnectionDescriptor->getConstructorArgumentProperty('config');
-        $config = $configArgument->getValue();
-        if ($config === null) {
-            $config = $moufManager->createInstance("Doctrine\\DBAL\\Configuration");
-            $config->setName('doctrineDbalConfiguration');
-
-            $configArgument->setValue($config);
-        }
-
-        if ($config->getProperty('filterSchemaAssetsExpression')->getValue() === null) {
-            $config->getProperty('filterSchemaAssetsExpression')->setValue('/^(?!patches$).*/');
-        }
-
-        $moufManager->rewriteMouf();
-        //Create patches table
-        self::createPatchTable($dbConnection);
-    }
-
     /**
      * Registers a database patch in the patch system.
      * Note: the patch will not be executed, only registered in "Awaiting" state.
@@ -102,7 +66,7 @@ class DatabasePatchInstaller implements PackageInstallerInterface
 
         $patchDescriptor->getProperty('uniqueName')->setValue($uniqueName);
         $patchDescriptor->getProperty('description')->setValue($description);
-        $patchDescriptor->getProperty('dbalConnection')->setValue($moufManager->getInstanceDescriptor('dbalConnection'));
+        $patchDescriptor->getProperty('patchConnection')->setValue($moufManager->getInstanceDescriptor('patchConnection'));
 
         $patchDescriptor->getProperty('upSqlFile')->setValue($upSqlFileName);
         $patchDescriptor->getProperty('downSqlFile')->setValue($downSqlFileName);
@@ -118,6 +82,7 @@ class DatabasePatchInstaller implements PackageInstallerInterface
             $patchManager->getProperty('patchs')->setValue($patchs);
         }
     }
+
 
     public static function generatePatch(MoufManager $moufManager, $description, $instanceName, $selfedit = 'false')
     {
@@ -135,7 +100,7 @@ class DatabasePatchInstaller implements PackageInstallerInterface
 
         $patchDescriptor->getProperty('uniqueName')->setValue($uniqueName);
         $patchDescriptor->getProperty('description')->setValue($description);
-        $patchDescriptor->getProperty('dbalConnection')->setValue($moufManager->getInstanceDescriptor('dbalConnection'));
+        $patchDescriptor->getProperty('patchConnection')->setValue($moufManager->getInstanceDescriptor('patchConnection'));
 
         $upSqlFileName = 'database/up/'.date('YmdHis').'-patch.sql';
         $databasePatchClass = new ClassProxy('Mouf\\Database\\Patcher\\DatabasePatch', $selfedit == 'true');
@@ -171,18 +136,18 @@ class DatabasePatchInstaller implements PackageInstallerInterface
     }
 
     /**
-     *
+     * @param PatchConnection $patchConnection
      */
-    public static function createPatchTable(Connection $dbalConnection) {
+    public static function createPatchTable(PatchConnection $patchConnection) {
         // Note: the "patches" table is most of the time filtered out.
         // Lets disable filters.
 
-        $filterSchemaAssetExpression = $dbalConnection->getConfiguration()->getFilterSchemaAssetsExpression();
-        $dbalConnection->getConfiguration()->setFilterSchemaAssetsExpression(null);
+        $filterSchemaAssetExpression = $patchConnection->getConnection()->getConfiguration()->getFilterSchemaAssetsExpression();
+        $patchConnection->getConnection()->getConfiguration()->setFilterSchemaAssetsExpression(null);
 
-        if(!$dbalConnection->getSchemaManager()->tablesExist(array('patches'))){
-            $sm = $dbalConnection->getSchemaManager();
-            $table = new \Doctrine\DBAL\Schema\Table('patches');
+        if(!$patchConnection->getConnection()->getSchemaManager()->tablesExist(array($patchConnection->getTableName()))) {
+            $sm = $patchConnection->getConnection()->getSchemaManager();
+            $table = new \Doctrine\DBAL\Schema\Table($patchConnection->getTableName());
             $table->addColumn('id', 'integer', array('autoincrement' => true));
             $table->addColumn('unique_name', 'string', array("length" => 255, 'customSchemaOptions' => array('unique' => true)));
             $table->addColumn('status', 'string', array("length" => 10));
@@ -192,6 +157,6 @@ class DatabasePatchInstaller implements PackageInstallerInterface
             $sm->createTable($table);
         }
 
-        $dbalConnection->getConfiguration()->setFilterSchemaAssetsExpression($filterSchemaAssetExpression);
+        $patchConnection->getConnection()->getConfiguration()->setFilterSchemaAssetsExpression($filterSchemaAssetExpression);
     }
 }

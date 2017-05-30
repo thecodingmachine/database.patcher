@@ -25,6 +25,7 @@ use Doctrine\DBAL\Schema\Schema;
 use Mouf\Utils\Patcher\PatchInterface;
 use Mouf\Utils\Patcher\PatchException;
 use Mouf\MoufManager;
+use Mouf\Utils\Patcher\PatchType;
 use Mouf\Validator\MoufStaticValidatorInterface;
 use Mouf\Validator\MoufValidatorResult;
 
@@ -41,24 +42,33 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     private $description;
 
     /**
-     * @var Connection
+     * @var PatchConnection
      */
-    private $dbalConnection;
+    private $patchConnection;
+    /**
+     * @var PatchType
+     */
+    private $patchType;
 
     /**
-     * @param Connection $dbalConnection The DbalConnection that will be used to run the patch.
-     * @param string     $uniqueName     The unique name for this patch.
-     * @param string     $upSqlFile
-     * @param string     $downSqlFile
-     * @param string     $description    The description for this patch.
+     * @param PatchConnection $patchConnection  The connection that will be used to run the patch.
+     * @param string          $uniqueName       The unique name for this patch.
+     * @param string          $upSqlFile
+     * @param string          $downSqlFile
+     * @param string          $description      The description for this patch.
      */
-    public function __construct(Connection $dbalConnection = null, $uniqueName = null, $upSqlFile = null, $downSqlFile = null, $description = null)
+    public function __construct(PatchConnection $patchConnection = null, $uniqueName = null, $upSqlFile = null, $downSqlFile = null, $description = null, PatchType $patchType = null)
     {
-        $this->dbalConnection = $dbalConnection;
+        $this->patchConnection = $patchConnection;
         $this->uniqueName = $uniqueName;
         $this->upSqlFile = $upSqlFile;
         $this->downSqlFile = $downSqlFile;
         $this->description = $description;
+        $this->patchType = $patchType;
+        if ($patchType === null) {
+            // In case no patch type is set, let's declare a default type (useful for migration purposes from old version where all patches have no type).
+            $this->patchType = new PatchType('', '');
+        }
     }
 
     /**
@@ -66,7 +76,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::apply()
      */
-    public function apply()
+    public function apply(): void
     {
         $this->createPatchesTable();
 
@@ -88,7 +98,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     /* (non-PHPdoc)
      * @see \Mouf\Utils\Patcher\PatchInterface::skip()
      */
-    public function skip()
+    public function skip(): void
     {
         $this->saveDbSchema();
         $this->createPatchesTable();
@@ -100,7 +110,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::revert()
      */
-    public function revert()
+    public function revert(): void
     {
         $this->createPatchesTable();
 
@@ -128,7 +138,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     {
         $this->checkdbalConnection();
         // First, let's check that the patches table exists and let's create the table if it does not.
-        DatabasePatchInstaller::createPatchTable($this->dbalConnection);
+        DatabasePatchInstaller::createPatchTable($this->patchConnection);
     }
 
     /**
@@ -136,7 +146,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::canRevert()
      */
-    public function canRevert()
+    public function canRevert(): bool
     {
         return !empty($this->downSqlFile);
     }
@@ -146,11 +156,11 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::getStatus()
      */
-    public function getStatus()
+    public function getStatus(): string
     {
         $this->createPatchesTable();
 
-        $status = $this->dbalConnection->fetchColumn('SELECT status FROM patches WHERE unique_name = ?', array($this->uniqueName));
+        $status = $this->patchConnection->getConnection()->fetchColumn('SELECT status FROM '.$this->patchConnection->getTableName().' WHERE unique_name = ?', array($this->uniqueName));
         if (!$status) {
             return PatchInterface::STATUS_AWAITING;
         }
@@ -163,7 +173,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::getUniqueName()
      */
-    public function getUniqueName()
+    public function getUniqueName(): string
     {
         return $this->uniqueName;
     }
@@ -173,7 +183,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      *
      * @see \Mouf\Utils\Patcher\PatchInterface::getDescription()
      */
-    public function getDescription()
+    public function getDescription(): string
     {
         return $this->description;
     }
@@ -204,8 +214,11 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
                     if (preg_match('~'.preg_quote(';', '~').'\s*$~iS', end($query)) === 1) {
                         $query = trim(implode('', $query));
 
+                        // Let's trim the ";" as they are not allowed by some databases (Oracle in particular)
+                        $query = trim($query, ';');
+
                         try {
-                            $this->dbalConnection->exec($query);
+                            $this->patchConnection->getConnection()->exec($query);
                         } catch (\Exception $e) {
                             throw new \Exception('An error occurred while executing request: '.$query.' --- Error message: '.$e->getMessage(), 0, $e);
                         }
@@ -231,9 +244,9 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     private function savePatch($status, $error_message)
     {
         $this->checkdbalConnection();
-        $id = $this->dbalConnection->fetchColumn('SELECT id FROM patches WHERE unique_name = ?', array($this->uniqueName));
+        $id = $this->patchConnection->getConnection()->fetchColumn('SELECT id FROM '.$this->patchConnection->getTableName().' WHERE unique_name = ?', array($this->uniqueName));
         if ($id) {
-            $this->dbalConnection->update('patches',
+            $this->patchConnection->getConnection()->update($this->patchConnection->getTableName(),
                 array(
                     'unique_name' => $this->uniqueName,
                     'status' => $status,
@@ -245,7 +258,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
                 )
             );
         } else {
-            $this->dbalConnection->insert('patches',
+            $this->patchConnection->getConnection()->insert($this->patchConnection->getTableName(),
                 array(
                     'unique_name' => $this->uniqueName,
                     'status' => $status,
@@ -259,12 +272,12 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     /* (non-PHPdoc)
      * @see \Mouf\Utils\Patcher\PatchInterface::getLastErrorMessage()
      */
-    public function getLastErrorMessage()
+    public function getLastErrorMessage(): ?string
     {
         $this->checkdbalConnection();
-        $errorMessage = $this->dbalConnection->fetchColumn('SELECT error_message FROM patches WHERE unique_name = ?', array($this->uniqueName));
+        $errorMessage = $this->patchConnection->getConnection()->fetchColumn('SELECT error_message FROM '.$this->patchConnection->getTableName().' WHERE unique_name = ?', array($this->uniqueName));
         if (!$errorMessage) {
-            return;
+            return null;
         }
 
         return $errorMessage;
@@ -275,7 +288,7 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
      */
     private function checkdbalConnection()
     {
-        if ($this->dbalConnection == null) {
+        if ($this->patchConnection->getConnection() == null) {
             throw new PatchException("Error in patch '".htmlentities($this->getUniqueName(), ENT_QUOTES, 'utf-8')."'. The dbalConnection is not set for this patch.");
         }
     }
@@ -283,14 +296,14 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
     /* (non-PHPdoc)
      * @see \Mouf\Utils\Patcher\PatchInterface::getEditUrl()
      */
-    public function getEditUrl()
+    public function getEditUrl(): ?string
     {
         return 'dbpatch/?patchInstanceName='.urlencode(MoufManager::getMoufManager()->findInstanceName($this));
     }
 
     private function saveDbSchema()
     {
-        $schema = $this->dbalConnection->getSchemaManager()->createSchema();
+        $schema = $this->patchConnection->getConnection()->getSchemaManager()->createSchema();
         file_put_contents(__DIR__.'/../../../../generated/schema', serialize($schema));
         chmod(__DIR__.'/../../../../generated/schema', 0664);
     }
@@ -338,5 +351,15 @@ class DatabasePatch implements PatchInterface, MoufStaticValidatorInterface
         } else {
             return new MoufValidatorResult(MoufValidatorResult::SUCCESS, "<strong>Database Patcher</strong>: Your database model hasn't been modified");
         }
+    }
+
+    /**
+     * Returns the type of the patch.
+     *
+     * @return PatchType
+     */
+    public function getPatchType(): PatchType
+    {
+        return $this->patchType;
     }
 }

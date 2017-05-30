@@ -18,8 +18,7 @@ and executed by others, we advise you to add an additional patch instead of edit
 
 <?php if ($this->upAndDownException): ?>
 <div class="alert"><strong>Warning!</strong> A problem occurred while trying to propose a patch automatically based on your
-previously saved data model. Please review the logs to see the error.</div>
-
+previously saved data model. This is normal if you are using the patch system for the first time. Otherwise, please review the logs to see the error.</div>
 <?php endif; ?>
 
 
@@ -43,6 +42,18 @@ previously saved data model. Please review the logs to see the error.</div>
 		<textarea name="description" class="input-xxlarge"><?php echo plainstring_to_htmlprotected($this->description); ?></textarea>
 		<span class="help-block">A short description of your patch.</span>
 	</div>
+</div>
+
+<div class="control-group">
+    <label class="control-label">Patch type:</label>
+    <div class="controls">
+        <select name="type" class="input-xxlarge">
+<?php foreach ($this->types as $type): ?>
+            <option value="<?php echo $type['instanceName'] ?>" <?php if ($this->selectedType === $type['instanceName']) { echo "selected"; } ?>><?php echo $type['name'] ?: '(default)' ?></option>
+<?php endforeach; ?>
+        </select>
+        <span class="help-block help-patch-type"></span>
+    </div>
 </div>
 
 <div class="control-group">
@@ -156,5 +167,19 @@ $(function() {
 	$('#buttondelete').click(function() {
 		return confirm("Warning! You are about to delete a patch. Are you sure? (SQL files will not be deleted, you can remove those manually)");
 	});
+
+	var updateTypeHelpText = function() {
+        var type = $('select[name=type]').val();
+        var helpTexts = <?php echo json_encode($this->types); ?>;
+        for (var i=0; i<helpTexts.length; i++) {
+            if (helpTexts[i].instanceName === type) {
+                $('.help-patch-type').html(helpTexts[i].description);
+                break;
+            }
+        }
+    };
+
+    $('select[name=type]').change(updateTypeHelpText);
+    updateTypeHelpText();
 });
 </script>

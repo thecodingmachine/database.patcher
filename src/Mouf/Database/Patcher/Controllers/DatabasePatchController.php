@@ -9,10 +9,12 @@ use Mouf\Mvc\Splash\Controllers\Controller;
 use Mouf\Html\HtmlElement\HtmlBlock;
 use Mouf\InstanceProxy;
 use Mouf\UniqueIdService;
+use Mouf\Utils\Patcher\PatchType;
 
 /**
  * The controller to register database patches in the patcher.
-
+ *
+ * @Logged
  */
 class DatabasePatchController extends AbstractMoufInstanceController
 {
@@ -38,6 +40,8 @@ class DatabasePatchController extends AbstractMoufInstanceController
     protected $downSqlFileName;
     protected $status;
     protected $upAndDownException;
+    protected $types;
+    protected $selectedType;
 
     /**
      * Page used to register a new patch / edit an existing patch.
@@ -55,21 +59,24 @@ class DatabasePatchController extends AbstractMoufInstanceController
         $rootPath = realpath(ROOT_PATH.'../../../').'/';
 
         $this->patchInstanceName = $patchInstanceName;
-        /*$patchService = new InstanceProxy($name, $selfedit == "true");
-        $this->patchesArray = $patchService->getView();*/
+
+        $patchService = new InstanceProxy($name, $selfedit == "true");
+        $this->types = $patchService->_getSerializedTypes();
 
         if ($patchInstanceName == null) {
             $now = date('YmdHis');
             $this->uniqueName = UniqueIdService::getUniqueId()."-$now-patch";
             $this->oldUniqueName = '';
-            $this->upSqlFileName = "database/up/$now-patch.sql";
+
+            $this->upSqlFileName = 'database/up/' . $now . '-patch.sql';
+            $this->downSqlFileName = 'database/down/' . $now . '-patch.sql';
+          
             $databasePatchClass = new ClassProxy('Mouf\\Database\\Patcher\\DatabasePatch', $selfedit == 'true');
             try {
                 $result = $databasePatchClass->generateUpAndDownSqlPatches();
                 if (isset($result['upPatch'][0]) && !empty($result['upPatch'][0])) {
                     $this->upSql = implode(";\n", $result['upPatch']) . ";\n";
                     $this->downSql = implode(";\n", $result['downPatch']) . ";\n";
-                    $this->downSqlFileName = "database/down/$now-patch.sql";
                 }
             } catch (\Exception $e) {
                 error_log($e->getMessage()."\n".$e->getTraceAsString());
@@ -80,6 +87,12 @@ class DatabasePatchController extends AbstractMoufInstanceController
 
             $this->uniqueName = $patchDescriptor->getProperty('uniqueName')->getValue();
             $this->description = $patchDescriptor->getProperty('description')->getValue();
+            $patchTypeDescriptor = $patchDescriptor->getProperty('patchType')->getValue();
+            if ($patchTypeDescriptor !== null) {
+                $this->selectedType = $patchDescriptor->getProperty('patchType')->getValue()->getIdentifierName();
+            } else {
+                $this->selectedType = '';
+            }
             $this->oldUniqueName = $this->uniqueName;
             $this->upSqlFileName = $patchDescriptor->getProperty('upSqlFile')->getValue();
             $this->downSqlFileName = $patchDescriptor->getProperty('downSqlFile')->getValue();
@@ -109,6 +122,7 @@ class DatabasePatchController extends AbstractMoufInstanceController
      * Saves the db patch and the files.
      *
      * @Action
+     * @Logged
      *
      * @param string $name
      * @param string $patchInstanceName
@@ -122,7 +136,7 @@ class DatabasePatchController extends AbstractMoufInstanceController
      * @param string $oldUniqueName
      */
     public function save($name, $patchInstanceName, $selfedit,
-            $uniqueName, $description, $upSql, $upSqlFileName, $downSql, $downSqlFileName,
+            $uniqueName, $description, $type, $upSql, $upSqlFileName, $downSql, $downSqlFileName,
             $oldUniqueName, $status, $action)
     {
         $this->initController($name, $selfedit);
@@ -186,7 +200,8 @@ class DatabasePatchController extends AbstractMoufInstanceController
 
         $patchDescriptor->getProperty('uniqueName')->setValue($uniqueName);
         $patchDescriptor->getProperty('description')->setValue($description);
-        $patchDescriptor->getProperty('dbalConnection')->setValue($this->moufManager->getInstanceDescriptor('dbalConnection'));
+        $patchDescriptor->getProperty('patchConnection')->setValue($this->moufManager->getInstanceDescriptor('patchConnection'));
+        $patchDescriptor->getProperty('patchType')->setValue($this->moufManager->getInstanceDescriptor($type));
 
         if ($downSql == '') {
             $downSql = null;

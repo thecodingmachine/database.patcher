@@ -13,9 +13,9 @@
         }
     ],
     "require": {
-    	"php": ">=5.3.0",
-    	"mouf/database.doctrine-dbal-wrapper": "~1.0",
-    	"mouf/utils.patcher": "~1.0"
+    	"php": ">=7.1",
+    	"mouf/database.doctrine-dbal-wrapper": "^1.0",
+    	"mouf/utils.patcher": "^2.0"
     },
     "autoload": {
         "psr-0": {
@@ -27,7 +27,7 @@
             "install": [
                 {
                   "type": "class",
-                  "class": "Mouf\\Database\\Patcher\\DatabasePatchInstaller",
+                  "class": "Mouf\\Database\\Patcher\\DatabasePatchInstaller2",
                   "description": "Create the 'patches' table in your database to track patches applied."
                 }
             ],
