@@ -6,7 +6,7 @@ use Mouf\MoufUtils;
 MoufUtils::registerMainMenu('utilsMainMenu', 'Utils', null, 'mainMenu', 200);
 MoufUtils::registerMenuItem('utilsPatchInterfaceMenu', 'Patches management', null, 'utilsMainMenu', 50);
 MoufUtils::registerChooseInstanceMenuItem('utilsRegisterDbPatchInterfaceMenuItem', 'Register a SQL patch', 'dbpatch/', 'Mouf\\Utils\\Patcher\\PatchService', 'utilsPatchInterfaceMenu', 10);
-MoufUtils::registerChooseInstanceMenuItem('utilsRegisterDbPatchViaPhpCodeInterfaceMenuItem', 'Register a PHP migration classes', 'migrationpatch/', 'Mouf\\Utils\\Patcher\\PatchService', 'utilsPatchInterfaceMenu', 20);
+MoufUtils::registerChooseInstanceMenuItem('utilsRegisterDbPatchViaPhpCodeInterfaceMenuItem', 'Register a PHP migration class', 'migrationpatch/', 'Mouf\\Utils\\Patcher\\PatchService', 'utilsPatchInterfaceMenu', 20);
 
 // Controller declaration
 $moufManager = MoufManager::getMoufManager();
