@@ -104,6 +104,8 @@ namespace $namespace;
 
 use Doctrine\DBAL\Schema\Schema;
 use Mouf\Database\Patcher\AbstractSchemaMigrationPatch;
+use TheCodingMachine\FluidSchema;
+
 
 /**
  * This class is a patch used to apply changes to the database.
@@ -112,12 +114,26 @@ class $shortClassName extends AbstractSchemaMigrationPatch
 {
     public function up(Schema \$schema) : void
     {
+        \$db = new FluidSchema(\$schema);
         // Code your migration here.
+        //
+        // \$db->table('users')
+        //     ->id() // Create an 'id' primary key that is an autoincremented integer
+        //     ->column('login')->string(50)->unique()->then() // Create a login column with a "unique" index
+        //     ->column('photo_url')->string(50)->null()->then() // Create a nullable 'photo_url' column
+        //     ->column('country_id')->references('countries') // Create a foreign key on the 'countries' table
+        //
+        // \$db->junctionTable('users', 'roles'); // Create a 'users_roles' junction table between 'users' and 'roles'.
+        
+        // More documentation here: https://github.com/thecodingmachine/dbal-fluid-schema-builder
+        // and here: http://docs.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/schema-representation.html
     }
     
     public function down(Schema \$schema) : void
     {
         // Code your migration cancellation code here.
+        //
+        // \$db->dropTable('users');
     }
     
     public function getDescription(): string
