@@ -15,7 +15,7 @@
     "require": {
     	"php": ">=7.1",
     	"mouf/database.doctrine-dbal-wrapper": "^1.0",
-    	"mouf/utils.patcher": "^2.0",
+    	"mouf/utils.patcher": "^2.1",
         "mouf/classname-mapper": "^1.0",
         "symfony/filesystem": "^2.0 || ^3.0",
         "thecodingmachine/dbal-fluid-schema-builder": "^1.0"
@@ -30,7 +30,7 @@
             "install": [
                 {
                   "type": "class",
-                  "class": "Mouf\\Database\\Patcher\\DatabasePatchInstaller2",
+                  "class": "Mouf\\Database\\Patcher\\DatabasePatchInstaller3",
                   "description": "Create the 'patches' table in your database to track patches applied."
                 }
             ],

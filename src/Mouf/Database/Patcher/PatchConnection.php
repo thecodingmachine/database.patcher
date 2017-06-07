@@ -21,6 +21,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 namespace Mouf\Database\Patcher;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\AbstractMySQLDriver;
+use Mouf\Utils\Patcher\PatchListenerInterface;
 
 
 /**
@@ -28,7 +30,7 @@ use Doctrine\DBAL\Connection;
  *
  * @author Pierre Vaidie
  */
-class PatchConnection
+class PatchConnection implements PatchListenerInterface
 {
     /**
      * @var string
@@ -39,16 +41,22 @@ class PatchConnection
      * @var Connection
      */
     private $dbalConnection;
+    /**
+     * @var Connection
+     */
+    private $dbalRootConnection;
 
     /**
      * DatabasePatchTable constructor.
-     * @param  string      $tableName
-     * @param  Connection  $dbalConnection
+     * @param  string $tableName
+     * @param  Connection $dbalConnection
+     * @param Connection|null $dbalRootConnection The DBAL connection with "root" credentials to drop and create the database again.
      */
-    public function __construct($tableName, Connection $dbalConnection)
+    public function __construct($tableName, Connection $dbalConnection, Connection $dbalRootConnection = null)
     {
         $this->tableName = $tableName;
         $this->dbalConnection = $dbalConnection;
+        $this->dbalRootConnection = $dbalRootConnection ?: $dbalConnection;
     }
 
     /**
@@ -85,5 +93,19 @@ class PatchConnection
      */
     public function setConnnection(Connection $dbalConnection) {
         $this->dbalConnection = $dbalConnection;
+    }
+
+    /**
+     * Triggered when the 'reset()' method is called on the PatchService
+     */
+    public function onReset(): void
+    {
+        // Let's drop and recreate the database from 0!
+        $dbName = $this->dbalConnection->getDatabase();
+        $this->dbalRootConnection->getSchemaManager()->dropAndCreateDatabase($dbName);
+
+        if ($this->dbalRootConnection->getDriver() instanceof AbstractMySQLDriver) {
+            $this->dbalRootConnection->exec('USE '.$dbName);
+        }
     }
 }

@@ -154,7 +154,7 @@ abstract class AbstractDatabasePatch implements PatchInterface
     {
         $schema = $this->patchConnection->getConnection()->getSchemaManager()->createSchema();
         file_put_contents(__DIR__.'/../../../../generated/schema', serialize($schema));
-        chmod(__DIR__.'/../../../../generated/schema', 0664);
+        @chmod(__DIR__.'/../../../../generated/schema', 0664);
     }
 
     /**
