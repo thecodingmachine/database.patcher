@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 namespace Mouf\Database\Patcher;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\AbstractMySQLDriver;
 use Mouf\Utils\Patcher\PatchListenerInterface;
 
 
@@ -102,5 +103,9 @@ class PatchConnection implements PatchListenerInterface
         // Let's drop and recreate the database from 0!
         $dbName = $this->dbalConnection->getDatabase();
         $this->dbalRootConnection->getSchemaManager()->dropAndCreateDatabase($dbName);
+
+        if ($this->dbalRootConnection->getDriver() instanceof AbstractMySQLDriver) {
+            $this->dbalRootConnection->exec('USE '.$dbName);
+        }
     }
 }
