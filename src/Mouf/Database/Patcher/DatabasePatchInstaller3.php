@@ -35,7 +35,7 @@ use Mouf\UniqueIdService;
  *
  * @author David Negrier <david@mouf-php.com>
  */
-class DatabasePatchInstaller2 implements PackageInstallerInterface
+class DatabasePatchInstaller3 implements PackageInstallerInterface
 {
     /**
      * (non-PHPdoc)
@@ -48,7 +48,7 @@ class DatabasePatchInstaller2 implements PackageInstallerInterface
         $dbConnectionDescriptor = $moufManager->getInstanceDescriptor('dbalConnection');
 
         //Let's get the instance of PatchConnection or create it if not exist
-       if ($moufManager->has('patchConnection')) {
+        if ($moufManager->has('patchConnection')) {
             $patchConnection = $moufManager->get('patchConnection');
             $patchConnectionDescriptor = $moufManager->getInstanceDescriptor('patchConnection');
         } else {
@@ -60,11 +60,15 @@ class DatabasePatchInstaller2 implements PackageInstallerInterface
             $patchConnection = $moufManager->get('patchConnection');
         }
 
-        // Let's create the table.
         $existingPatches = $moufManager->findInstances("Mouf\\Database\\Patcher\\DatabasePatch");
-        foreach($existingPatches as $existingPatche){
-            $patchIntance = $moufManager->getInstanceDescriptor($existingPatche);
-            $patchIntance->getProperty('patchConnection')->setValue($patchConnectionDescriptor);
+        foreach($existingPatches as $existingPatch) {
+            $patchInstance = $moufManager->getInstanceDescriptor($existingPatch);
+            $patchInstance->getProperty('patchConnection')->setValue($patchConnectionDescriptor);
+        }
+
+        $patchServiceDescriptor = $moufManager->getInstanceDescriptor('patchService');
+        if ($patchServiceDescriptor->getProperty('listeners')->getValue() === null) {
+            $patchServiceDescriptor->getProperty('listeners')->setValue([ $patchConnectionDescriptor ]);
         }
 
         // Finally, let's change the dbalConnection configuration to add an ignore rule on the "patches" table.
