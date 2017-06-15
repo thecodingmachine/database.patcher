@@ -104,7 +104,7 @@ namespace $namespace;
 
 use Doctrine\DBAL\Schema\Schema;
 use Mouf\Database\Patcher\AbstractSchemaMigrationPatch;
-use TheCodingMachine\FluidSchema;
+use TheCodingMachine\FluidSchema\FluidSchema;
 
 
 /**
@@ -121,7 +121,7 @@ class $shortClassName extends AbstractSchemaMigrationPatch
         //     ->id() // Create an 'id' primary key that is an autoincremented integer
         //     ->column('login')->string(50)->unique()->then() // Create a login column with a "unique" index
         //     ->column('photo_url')->string(50)->null()->then() // Create a nullable 'photo_url' column
-        //     ->column('country_id')->references('countries') // Create a foreign key on the 'countries' table
+        //     ->column('country_id')->references('countries'); // Create a foreign key on the 'countries' table
         //
         // \$db->junctionTable('users', 'roles'); // Create a 'users_roles' junction table between 'users' and 'roles'.
         
