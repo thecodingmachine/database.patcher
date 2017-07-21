@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 namespace Mouf\Database\Patcher;
 
 use Doctrine\DBAL\Connection;
+use Mouf\Actions\InstallUtils;
 use Mouf\ClassProxy;
 use Mouf\Installer\PackageInstallerInterface;
 use Mouf\InstanceProxy;
@@ -50,7 +51,7 @@ class DatabasePatchInstaller
      * @param string      $upSqlFileName   The SQL file containing the patch, relative to ROOT_PATH. Should not start with /.
      * @param string      $downSqlFileName (optional) The SQL file containing the revert patch, relative to ROOT_PATH. Should not start with /.
      */
-    public static function registerPatch(MoufManager $moufManager, $uniqueName, $description, $upSqlFileName, $downSqlFileName = null)
+    public static function registerPatch(MoufManager $moufManager, string $uniqueName, string $description, string $upSqlFileName, string $downSqlFileName = null): void
     {
         // First, let's find if this patch already exists... We assume that $uniqueName = "dbpatch.$instanceName".
 
@@ -74,6 +75,35 @@ class DatabasePatchInstaller
         // Register the patch in the patchService.
         $patchManager = $moufManager->getInstanceDescriptor('patchService');
         if (!$exists) {
+            $patchs = $patchManager->getProperty('patchs')->getValue();
+            if ($patchs === null) {
+                $patchs = array();
+            }
+            $patchs[] = $patchDescriptor;
+            $patchManager->getProperty('patchs')->setValue($patchs);
+        }
+    }
+
+    /**
+     * Registers a database migration patch in the patch system.
+     * Note: the patch will not be executed, only registered in "Awaiting" state.
+     * The user will have to manually execute the patch.
+     *
+     * Note: if the patch already exists, we will update this instance.
+     *
+     */
+    public static function registerMigrationPatch(MoufManager $moufManager, string $className): void
+    {
+        // If the patch already exists, we go in edit mode.
+        $exists = $moufManager->has($className);
+
+        $patchDescriptor = InstallUtils::getOrCreateInstance($className, $className, $moufManager);
+
+        $patchDescriptor->getProperty('patchConnection')->setValue($moufManager->getInstanceDescriptor('patchConnection'));
+
+        // Register the patch in the patchService.
+        if (!$exists) {
+            $patchManager = $moufManager->getInstanceDescriptor('patchService');
             $patchs = $patchManager->getProperty('patchs')->getValue();
             if ($patchs === null) {
                 $patchs = array();
