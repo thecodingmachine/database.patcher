@@ -22,6 +22,8 @@ namespace Mouf\Database\Patcher;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Schema;
+use Mouf\Utils\Patcher\Dumper\DumpableInterface;
+use Mouf\Utils\Patcher\Dumper\DumperInterface;
 use Mouf\Utils\Patcher\PatchInterface;
 use Mouf\Utils\Patcher\PatchException;
 use Mouf\MoufManager;
@@ -34,7 +36,7 @@ use Mouf\Validator\MoufValidatorResult;
  *
  * @author David Negrier <david@mouf-php.com>
  */
-abstract class AbstractDatabasePatch implements PatchInterface
+abstract class AbstractDatabasePatch implements PatchInterface, DumpableInterface
 {
     /**
      * @var PatchConnection
@@ -170,5 +172,10 @@ abstract class AbstractDatabasePatch implements PatchInterface
     protected function getConnection(): Connection
     {
         return $this->patchConnection->getConnection();
+    }
+
+    public function setDumper(DumperInterface $dumper)
+    {
+        $this->patchConnection->setDumper($dumper);
     }
 }
