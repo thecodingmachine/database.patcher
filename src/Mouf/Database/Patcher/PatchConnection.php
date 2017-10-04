@@ -22,6 +22,8 @@ namespace Mouf\Database\Patcher;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver\AbstractMySQLDriver;
+use Mouf\Utils\Patcher\Dumper\DumpableInterface;
+use Mouf\Utils\Patcher\Dumper\DumperInterface;
 use Mouf\Utils\Patcher\PatchListenerInterface;
 
 
@@ -30,7 +32,7 @@ use Mouf\Utils\Patcher\PatchListenerInterface;
  *
  * @author Pierre Vaidie
  */
-class PatchConnection implements PatchListenerInterface
+class PatchConnection implements PatchListenerInterface, DumpableInterface
 {
     /**
      * @var string
@@ -107,5 +109,10 @@ class PatchConnection implements PatchListenerInterface
         if ($this->dbalRootConnection->getDriver() instanceof AbstractMySQLDriver) {
             $this->dbalRootConnection->exec('USE '.$dbName);
         }
+    }
+
+    public function setDumper(DumperInterface $dumper)
+    {
+        $this->dbalConnection->getConfiguration()->setSQLLogger(new DatabasePatchLogger($dumper, $this->dbalConnection->getDatabasePlatform()));
     }
 }
