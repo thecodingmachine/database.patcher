@@ -17,7 +17,7 @@
     	"mouf/database.doctrine-dbal-wrapper": "^1.0",
     	"mouf/utils.patcher": "^2.2",
         "mouf/classname-mapper": "^1.0",
-        "symfony/filesystem": "^2.0 || ^3.0",
+        "symfony/filesystem": "^2 || ^3 || ^4",
         "thecodingmachine/dbal-fluid-schema-builder": "^1.0"
     },
     "autoload": {
